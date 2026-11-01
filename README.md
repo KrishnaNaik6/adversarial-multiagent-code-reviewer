@@ -1,1 +1,1 @@
-# adversarial--multiagent-code-reviewer
+# adversarial-multiagent-code-reviewer
