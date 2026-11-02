@@ -55,3 +55,4 @@ class TestValidator:
         )
         if not has_test_func:
             raise TestGenerationError("Generated test does not define any 'test_*' functions.")
+

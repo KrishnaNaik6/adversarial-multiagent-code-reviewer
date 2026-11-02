@@ -37,11 +37,17 @@ class DockerSandboxRunner:
             test_file = tmp_dir / test_artifact.file_name
             test_file.write_text(test_artifact.code, encoding="utf-8")
 
+            # Copy harness into temporary directory
+            harness_src = Path(__file__).parent / "harness.py"
+            harness_dst = tmp_dir / "harness.py"
+            shutil.copy2(harness_src, harness_dst)
+
             if docker_bin and self._is_docker_available():
                 return self._run_in_docker(
                     docker_bin=docker_bin,
                     repo_path=repo_path.resolve(),
                     test_file=test_file,
+                    harness_file=harness_dst,
                     test_artifact=test_artifact,
                     timeout_seconds=effective_timeout,
                 )
@@ -50,6 +56,7 @@ class DockerSandboxRunner:
                 return self._run_local_fallback(
                     repo_path=repo_path.resolve(),
                     test_file=test_file,
+                    harness_file=harness_dst,
                     test_artifact=test_artifact,
                     timeout_seconds=effective_timeout,
                 )
@@ -67,6 +74,7 @@ class DockerSandboxRunner:
         docker_bin: str,
         repo_path: Path,
         test_file: Path,
+        harness_file: Path,
         test_artifact: TestArtifact,
         timeout_seconds: int,
     ) -> ExecutionResult:
@@ -94,10 +102,9 @@ class DockerSandboxRunner:
             "-e",
             "PYTHONPATH=/app/repo:/app/repo/src",
             self.config.image,
-            "pytest",
+            "python",
+            "/app/tests/harness.py",
             f"/app/tests/{test_file.name}",
-            "-q",
-            "--no-header",
         ]
 
         logger.info("Starting Docker sandbox container for %s", test_artifact.id)
@@ -138,22 +145,21 @@ class DockerSandboxRunner:
         self,
         repo_path: Path,
         test_file: Path,
+        harness_file: Path,
         test_artifact: TestArtifact,
         timeout_seconds: int,
     ) -> ExecutionResult:
         """Isolated local process execution when Docker is unavailable."""
         import os
+
         python_bin = sys.executable
         env = os.environ.copy()
         env["PYTHONPATH"] = f"{repo_path}{os.pathsep}{repo_path / 'src'}"
 
         cmd = [
             python_bin,
-            "-m",
-            "pytest",
+            str(harness_file),
             str(test_file),
-            "-q",
-            "--no-header",
         ]
 
         start_time = time.perf_counter()

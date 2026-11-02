@@ -82,3 +82,4 @@ def test_breaker_generates_mutable_default_test() -> None:
     assert artifact.hypothesis_id == "HYP-002"
     assert "test_mutable_default_isolation" in artifact.code
     assert artifact.strategy == "state_accumulation"
+

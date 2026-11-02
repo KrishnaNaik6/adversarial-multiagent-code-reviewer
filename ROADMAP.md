@@ -42,7 +42,7 @@
   - Classify outcome: `CONFIRMED`, `DISPROVED`, `INCONCLUSIVE`, `UNVERIFIED`, `EXECUTION_ERROR`.
   - Prevent unverified findings from claiming confirmation.
 
-- [ ] **Phase 7 — Multi-Agent Orchestration**
+- [x] **Phase 7 — Multi-Agent Orchestration**
   - State machine coordinator (`adversary.orchestration`).
   - State transitions: `INIT` -> `INDEXED` -> `ANALYZED` -> `HYPOTHESIZED` -> `TESTED` -> `VERIFIED` -> `COMPLETED`.
   - Concurrency management, timeout budgets, partial failure recovery.

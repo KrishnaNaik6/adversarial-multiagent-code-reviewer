@@ -26,3 +26,4 @@ def silent_operation(val: int) -> int:
     except Exception:
         pass
     return 0
+

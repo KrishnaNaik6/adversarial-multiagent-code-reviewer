@@ -103,3 +103,4 @@ class HypothesisGenerator:
             defect_behavior=defect_behavior,
             rationale=rationale,
         )
+

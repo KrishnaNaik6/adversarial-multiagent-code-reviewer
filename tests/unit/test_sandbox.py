@@ -26,11 +26,13 @@ def test_sandbox_fallback_execution(tmp_path: Path) -> None:
 
     test_file = tmp_path / "test_div.py"
     test_file.write_text(test_artifact.code, encoding="utf-8")
+    harness_file = Path("src/adversary/sandbox/harness.py").resolve()
 
     runner = DockerSandboxRunner(config=SandboxConfig(timeout_seconds=10))
     result = runner._run_local_fallback(
         repo_path=tmp_path,
         test_file=test_file,
+        harness_file=harness_file,
         test_artifact=test_artifact,
         timeout_seconds=10,
     )

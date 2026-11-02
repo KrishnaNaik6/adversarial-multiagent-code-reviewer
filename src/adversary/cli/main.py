@@ -42,7 +42,7 @@ def init(
     config.reports_dir.mkdir(parents=True, exist_ok=True)
 
     console.print(
-        f"[bold green]✔[/bold green] Initialized Adversary workspace in [cyan]{config.data_dir}[/cyan]"
+        f"[bold green][OK][/bold green] Initialized Adversary workspace in [cyan]{config.data_dir}[/cyan]"
     )
 
 
@@ -55,9 +55,48 @@ def review(
     base_branch: str = typer.Option("main", "--base", help="Base branch for git diff comparison"),
 ) -> None:
     """Execute the full evidence-gated review pipeline on a repository."""
-    console.print(f"[bold cyan]🔍 Reviewing target repository:[/bold cyan] {target_path}")
-    # Integration hooks will connect to Orchestrator in Phase 7
-    console.print(f"[dim]Options: changed_only={changed_only}, base_branch={base_branch}[/dim]")
+    from adversary.orchestration.coordinator import ReviewOrchestrator
+
+    console.print(f"[bold cyan][*] Reviewing target repository:[/bold cyan] {target_path}")
+
+    orchestrator = ReviewOrchestrator()
+    try:
+        report = orchestrator.run(target_path)
+    except Exception as e:
+        console.print(f"[bold red]Review failed:[/bold red] {e}")
+        raise typer.Exit(code=1) from e
+
+    # Render results table
+    table = Table(title=f"Review Results for {report.repo_path} (Run: {report.run_id})")
+    table.add_column("ID", style="cyan", no_wrap=True)
+    table.add_column("Title", style="bold")
+    table.add_column("Category", style="magenta")
+    table.add_column("Severity", style="red")
+    table.add_column("Status", style="green")
+    table.add_column("Location", style="yellow")
+
+    for f in report.findings:
+        status_color = "green" if f.verification_status.value == "confirmed" else "dim"
+        table.add_row(
+            f.id,
+            f.title,
+            f.category.value,
+            f.severity.value,
+            f"[{status_color}]{f.verification_status.value.upper()}[/{status_color}]",
+            f"{f.location.file_path}:{f.location.line_start}",
+        )
+
+    console.print(table)
+    console.print(
+        Panel.fit(
+            f"Total Findings: {report.summary.get('total_findings', 0)} | "
+            f"[bold green]Confirmed: {report.summary.get('confirmed', 0)}[/bold green] | "
+            f"Disproved: {report.summary.get('disproved', 0)} | "
+            f"Inconclusive: {report.summary.get('inconclusive', 0)}",
+            title="Verification Summary",
+            border_style="green" if report.summary.get("confirmed", 0) > 0 else "blue",
+        )
+    )
 
 
 @app.command()

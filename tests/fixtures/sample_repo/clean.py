@@ -21,3 +21,4 @@ def append_to_list_safe(val: int, items: list[int] | None = None) -> list[int]:
 def run_user_script_safe(cmd: str) -> None:
     """Execute command safely without shell evaluation."""
     subprocess.run(["echo", cmd], shell=False, check=False)
+

@@ -54,7 +54,7 @@ class BreakerAgent:
                 code=code,
                 strategy=strategy,
                 timeout_seconds=15,
-                dependencies=["pytest"],
+                dependencies=[],
             )
             artifacts.append(artifact)
             logger.info("Generated valid adversarial test artifact %s for %s", artifact.id, hypothesis.id)
@@ -65,7 +65,6 @@ class BreakerAgent:
 
     def _generate_division_test(self, mod: str, short_mod: str, func: str) -> str:
         return f'''"""Adversarial reproduction test for potential division by zero."""
-import pytest
 
 def test_division_on_empty_input():
     try:
@@ -75,13 +74,12 @@ def test_division_on_empty_input():
 
     # Exercise boundary condition: empty sequence
     result = {func}([])
-    # Contract expect: either default value or documented exception, not uncaught crash
+    # Contract expectation: either default value or documented exception, not uncaught crash
     assert result == 0.0 or result is None
 '''
 
     def _generate_mutable_default_test(self, mod: str, short_mod: str, func: str) -> str:
         return f'''"""Adversarial reproduction test for mutable default argument leakage."""
-import pytest
 
 def test_mutable_default_isolation():
     try:
@@ -99,7 +97,6 @@ def test_mutable_default_isolation():
 
     def _generate_swallowed_exception_test(self, mod: str, short_mod: str, func: str) -> str:
         return f'''"""Adversarial reproduction test for silently swallowed exceptions."""
-import pytest
 
 def test_swallowed_exception_detection():
     try:
@@ -108,14 +105,16 @@ def test_swallowed_exception_detection():
         from {short_mod} import {func}
 
     # Triggering zero division or invalid value inside swallowed block
-    # Should either succeed or raise an informative exception, not return silently
-    with pytest.raises((ValueError, ZeroDivisionError)):
+    raised = False
+    try:
         {func}(0)
+    except (ValueError, ZeroDivisionError):
+        raised = True
+    assert raised, "Expected exception was silently swallowed"
 '''
 
     def _generate_generic_boundary_test(self, mod: str, short_mod: str, func: str) -> str:
         return f'''"""Adversarial boundary test."""
-import pytest
 
 def test_boundary_invariants():
     try:
