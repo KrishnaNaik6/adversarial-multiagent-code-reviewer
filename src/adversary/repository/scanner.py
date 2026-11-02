@@ -72,7 +72,9 @@ class RepositoryScanner:
             # Check for path traversal / symlink escapement
             if not is_safe_path(file_path, canonical_repo):
                 logger.warning("Skipping unsafe path escaping repository root: %s", file_path)
-                raise PathTraversalError(f"Detected path traversal attempting to escape repository: {file_path}")
+                raise PathTraversalError(
+                    f"Detected path traversal attempting to escape repository: {file_path}"
+                )
 
             # Check if any part of the path is in ignore list
             rel_parts = file_path.relative_to(canonical_repo).parts

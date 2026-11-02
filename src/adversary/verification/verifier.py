@@ -61,7 +61,9 @@ class IndependentVerifier:
             )
 
         # 3. Execution outcome is FAILED. Check evidence attribution.
-        tb_text = execution_result.traceback_summary or execution_result.stdout or execution_result.stderr
+        tb_text = (
+            execution_result.traceback_summary or execution_result.stdout or execution_result.stderr
+        )
         is_attributed = self._is_attributed(hypothesis, tb_text)
 
         if not is_attributed:
@@ -119,7 +121,14 @@ class IndependentVerifier:
 
     def _extract_expected_exception(self, defect_behavior: str) -> str | None:
         """Extract anticipated exception name from hypothesis statement if specified."""
-        for exc in ["ZeroDivisionError", "ValueError", "TypeError", "KeyError", "IndexError", "AssertionError"]:
+        for exc in [
+            "ZeroDivisionError",
+            "ValueError",
+            "TypeError",
+            "KeyError",
+            "IndexError",
+            "AssertionError",
+        ]:
             if exc in defect_behavior:
                 return exc
         return None

@@ -85,8 +85,16 @@ class ASTPatternVisitor(ast.NodeVisitor):
                         source_hash=self.source_hash,
                     )
                 )
-            elif isinstance(node.right, ast.Call) and isinstance(node.right.func, ast.Name) and node.right.func.id == "len":
-                arg_name = node.right.args[0].id if node.right.args and isinstance(node.right.args[0], ast.Name) else None
+            elif (
+                isinstance(node.right, ast.Call)
+                and isinstance(node.right.func, ast.Name)
+                and node.right.func.id == "len"
+            ):
+                arg_name = (
+                    node.right.args[0].id
+                    if node.right.args and isinstance(node.right.args[0], ast.Name)
+                    else None
+                )
                 if arg_name not in self._guarded_vars:
                     self.findings.append(
                         CandidateFinding(
@@ -134,7 +142,11 @@ class ASTPatternVisitor(ast.NodeVisitor):
                 )
         elif isinstance(node.func, ast.Attribute) and node.func.attr in {"Popen", "run", "call"}:
             for kw in node.keywords:
-                if kw.arg == "shell" and isinstance(kw.value, ast.Constant) and kw.value.value is True:
+                if (
+                    kw.arg == "shell"
+                    and isinstance(kw.value, ast.Constant)
+                    and kw.value.value is True
+                ):
                     self.findings.append(
                         CandidateFinding(
                             id=self._next_id("SEC"),

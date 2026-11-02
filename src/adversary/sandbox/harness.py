@@ -52,7 +52,9 @@ def main() -> None:
             func()
             passed += 1
         except Exception:
-            print("=================================== FAILURES ===================================")
+            print(
+                "=================================== FAILURES ==================================="
+            )
             print(f"_________________________ {func.__name__} _________________________")
             traceback.print_exc()
             sys.exit(1)
@@ -63,4 +65,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

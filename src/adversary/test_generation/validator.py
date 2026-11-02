@@ -40,13 +40,17 @@ class TestValidator:
         try:
             tree = ast.parse(test_code, filename="<generated_test>")
         except SyntaxError as e:
-            raise TestGenerationError(f"Generated test contains invalid syntax at line {e.lineno}: {e.msg}") from e
+            raise TestGenerationError(
+                f"Generated test contains invalid syntax at line {e.lineno}: {e.msg}"
+            ) from e
 
         # Check safety constraints
         safety_visitor = SafetyVisitor()
         safety_visitor.visit(tree)
         if safety_visitor.violations:
-            raise TestGenerationError(f"Generated test failed safety checks: {', '.join(safety_visitor.violations)}")
+            raise TestGenerationError(
+                f"Generated test failed safety checks: {', '.join(safety_visitor.violations)}"
+            )
 
         # Ensure at least one test function is defined
         has_test_func = any(
@@ -55,4 +59,3 @@ class TestValidator:
         )
         if not has_test_func:
             raise TestGenerationError("Generated test does not define any 'test_*' functions.")
-

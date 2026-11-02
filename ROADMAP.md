@@ -47,7 +47,7 @@
   - State transitions: `INIT` -> `INDEXED` -> `ANALYZED` -> `HYPOTHESIZED` -> `TESTED` -> `VERIFIED` -> `COMPLETED`.
   - Concurrency management, timeout budgets, partial failure recovery.
 
-- [ ] **Phase 8 — Persistence and Reporting**
+- [x] **Phase 8 — Persistence and Reporting**
   - SQLite storage schema (`adversary.persistence`).
   - Store review runs, candidate findings, hypotheses, generated tests, raw evidence, and verification decisions.
   - JSON and GitHub-flavored Markdown report generators.

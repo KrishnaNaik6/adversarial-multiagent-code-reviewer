@@ -40,7 +40,9 @@ def test_orchestrator_full_run_on_fixtures() -> None:
     assert len(report.decisions) >= 4
 
     # Confirmed findings should include ZeroDivisionError or mutable defaults
-    confirmed = [f for f in report.findings if f.verification_status == VerificationStatus.CONFIRMED]
+    confirmed = [
+        f for f in report.findings if f.verification_status == VerificationStatus.CONFIRMED
+    ]
     assert len(confirmed) >= 1
     assert report.summary["confirmed"] >= 1
 

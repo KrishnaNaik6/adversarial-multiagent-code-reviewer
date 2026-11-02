@@ -18,8 +18,8 @@
 | **Phase 5** | Docker Sandbox & Evidence Collection | **PASS** | Container isolation, fallback execution, evidence parsing & outcome classification |
 | **Phase 6** | Independent Verification Engine | **PASS** | Evidence attribution, outcome classification & false-failure rejection passing |
 | **Phase 7** | Multi-Agent Orchestration | **PASS** | State machine coordinator, full closed-loop review pipeline & CLI integration |
-| **Phase 8** | Persistence and Reporting | **IN PROGRESS** | Pending implementation |
-| **Phase 9** | Repair & Regression Verification | PENDING | - |
+| **Phase 8** | Persistence and Reporting | **PASS** | SQLite store, Markdown & JSON reports, CLI findings/explain/report passing |
+| **Phase 9** | Repair & Regression Verification | **IN PROGRESS** | Pending implementation |
 | **Phase 10** | Security Hardening & Audit | PENDING | - |
 | **Phase 11** | Integration & Release Readiness | PENDING | - |
 
@@ -131,4 +131,20 @@
   - `ruff check .`: PASS (0 errors).
   - `mypy src tests`: PASS (51 source files clean).
   - `adversary review`: Executed live review on fixture repository confirming seeded ZeroDivisionError defect.
+- **Status:** **PASS**
+
+### Phase 8: Persistence and Reporting
+- **Objectives:** Implement SQLite relational storage with versioned schema, save review runs and evidence links, generate Markdown and JSON reports, and connect findings/explain CLI commands.
+- **Implemented Functionality:**
+  - `adversary.persistence.database`: SQLite database initialization and versioned schema tables (`review_runs`, `findings`, `hypotheses`, `test_artifacts`, `execution_results`, `verification_decisions`).
+  - `adversary.persistence.repository.RunStore`: Save and query runs, find latest run, list historical runs, and query full correlated finding details.
+  - `adversary.reporting.markdown.MarkdownReporter`: Generates GitHub-flavored Markdown reports with summary metrics, confirmed defects with reproduction proofs and tracebacks, disproved/inconclusive tables, and trust notices.
+  - `adversary.reporting.json_reporter.JSONReporter`: Schema-validated JSON export.
+  - Typer CLI commands: `findings`, `explain <id>`, `report --format <markdown|json>` connected directly to `RunStore`.
+  - Unit tests (`tests/unit/test_persistence.py`, `tests/unit/test_reporting.py`).
+- **Verification Results:**
+  - `pytest`: 42 passed.
+  - `ruff check .`: PASS (0 errors).
+  - `mypy src tests`: PASS (59 source files clean).
+  - Live CLI commands verified (`adversary findings`, `adversary explain FIND-001`, `adversary report`).
 - **Status:** **PASS**

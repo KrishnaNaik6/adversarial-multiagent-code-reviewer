@@ -56,7 +56,9 @@ def test_verify_disproved_when_test_passes() -> None:
         defect_behavior="ZeroDivisionError",
         rationale="Safe function",
     )
-    test = TestArtifact(id="TEST-002", hypothesis_id="HYP-002", file_name="t.py", code="...", strategy="boundary")
+    test = TestArtifact(
+        id="TEST-002", hypothesis_id="HYP-002", file_name="t.py", code="...", strategy="boundary"
+    )
     exec_result = ExecutionResult(
         id="EXEC-002",
         test_id="TEST-002",
@@ -85,7 +87,9 @@ def test_verify_inconclusive_on_timeout() -> None:
         defect_behavior="Crash",
         rationale="",
     )
-    test = TestArtifact(id="TEST-003", hypothesis_id="HYP-003", file_name="t.py", code="...", strategy="boundary")
+    test = TestArtifact(
+        id="TEST-003", hypothesis_id="HYP-003", file_name="t.py", code="...", strategy="boundary"
+    )
     exec_result = ExecutionResult(
         id="EXEC-003",
         test_id="TEST-003",
@@ -114,7 +118,9 @@ def test_verify_execution_error_on_unrelated_import_failure() -> None:
         defect_behavior="ZeroDivisionError",
         rationale="",
     )
-    test = TestArtifact(id="TEST-004", hypothesis_id="HYP-004", file_name="t.py", code="...", strategy="boundary")
+    test = TestArtifact(
+        id="TEST-004", hypothesis_id="HYP-004", file_name="t.py", code="...", strategy="boundary"
+    )
     exec_result = ExecutionResult(
         id="EXEC-004",
         test_id="TEST-004",
@@ -133,4 +139,3 @@ def test_verify_execution_error_on_unrelated_import_failure() -> None:
     assert decision.status == VerificationStatus.INCONCLUSIVE
     assert decision.is_attributed_to_target is False
     assert "not attributable" in decision.explanation
-

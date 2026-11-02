@@ -32,13 +32,19 @@ class BreakerAgent:
         # If path begins with src., strip src. for execution path flexibility
         short_module = module_path.removeprefix("src.")
 
-        if "ZeroDivisionError" in hypothesis.defect_behavior or "division" in hypothesis.rationale.lower():
+        if (
+            "ZeroDivisionError" in hypothesis.defect_behavior
+            or "division" in hypothesis.rationale.lower()
+        ):
             code = self._generate_division_test(module_path, short_module, target_func)
             strategy = "boundary_empty_input"
         elif "mutable default" in hypothesis.rationale.lower():
             code = self._generate_mutable_default_test(module_path, short_module, target_func)
             strategy = "state_accumulation"
-        elif "swallowed" in hypothesis.rationale.lower() or "bare except" in hypothesis.rationale.lower():
+        elif (
+            "swallowed" in hypothesis.rationale.lower()
+            or "bare except" in hypothesis.rationale.lower()
+        ):
             code = self._generate_swallowed_exception_test(module_path, short_module, target_func)
             strategy = "exception_path"
         else:
@@ -57,7 +63,9 @@ class BreakerAgent:
                 dependencies=[],
             )
             artifacts.append(artifact)
-            logger.info("Generated valid adversarial test artifact %s for %s", artifact.id, hypothesis.id)
+            logger.info(
+                "Generated valid adversarial test artifact %s for %s", artifact.id, hypothesis.id
+            )
         except Exception as e:
             logger.warning("Failed to validate generated test for %s: %s", hypothesis.id, e)
 

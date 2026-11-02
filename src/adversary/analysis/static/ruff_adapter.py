@@ -73,7 +73,9 @@ class RuffAnalyzer:
                     location=location,
                     originating_tool="ruff",
                     rule_id=code,
-                    suggested_remediation=diag.get("fix", {}).get("message") if diag.get("fix") else None,
+                    suggested_remediation=diag.get("fix", {}).get("message")
+                    if diag.get("fix")
+                    else None,
                     source_hash=source_hash,
                 )
                 findings.append(finding)

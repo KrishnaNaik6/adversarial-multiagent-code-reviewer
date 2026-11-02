@@ -49,10 +49,17 @@ class HypothesisGenerator:
     ) -> DefectHypothesis:
         func_display = target_func or "module level"
 
-        if finding.category == FindingCategory.BOUNDARY_CONDITION or "division by zero" in finding.title.lower():
-            preconditions = "Caller passes an empty sequence or zero denominator to division operation."
+        if (
+            finding.category == FindingCategory.BOUNDARY_CONDITION
+            or "division by zero" in finding.title.lower()
+        ):
+            preconditions = (
+                "Caller passes an empty sequence or zero denominator to division operation."
+            )
             trigger_input = "[] (empty list) or len(collection) == 0"
-            expected_behavior = "Function returns default (e.g. 0.0) or raises documented ValueError."
+            expected_behavior = (
+                "Function returns default (e.g. 0.0) or raises documented ValueError."
+            )
             defect_behavior = "Uncaught ZeroDivisionError crashes execution."
             rationale = (
                 f"In {target_file} ({func_display} at line {finding.location.line_start}), "
@@ -61,16 +68,22 @@ class HypothesisGenerator:
         elif finding.category == FindingCategory.SECURITY:
             preconditions = "Attacker controls string input passed to execution sink."
             trigger_input = "'; cat /etc/passwd' or malicious command injection payload"
-            expected_behavior = "Input is treated strictly as data or safely escaped without shell evaluation."
+            expected_behavior = (
+                "Input is treated strictly as data or safely escaped without shell evaluation."
+            )
             defect_behavior = "Subshell interprets malicious shell commands."
             rationale = (
                 f"In {target_file} ({func_display} at line {finding.location.line_start}), "
                 "command execution sink evaluates raw input in subshell."
             )
         elif "mutable default" in finding.title.lower():
-            preconditions = "Function is called multiple times without providing the optional argument."
+            preconditions = (
+                "Function is called multiple times without providing the optional argument."
+            )
             trigger_input = "Consecutive invocations relying on default argument"
-            expected_behavior = "Each call receives an independent, freshly allocated empty collection."
+            expected_behavior = (
+                "Each call receives an independent, freshly allocated empty collection."
+            )
             defect_behavior = "Mutations accumulate into the shared default across invocations."
             rationale = (
                 f"In {target_file} ({func_display} at line {finding.location.line_start}), "
@@ -90,7 +103,9 @@ class HypothesisGenerator:
             trigger_input = "Adversarial boundary value or edge case"
             expected_behavior = "Graceful handling according to component contract."
             defect_behavior = f"Observed violation: {finding.title}"
-            rationale = f"Static analysis identified rule violation: {finding.rule_id} in {target_file}."
+            rationale = (
+                f"Static analysis identified rule violation: {finding.rule_id} in {target_file}."
+            )
 
         return DefectHypothesis(
             id=hyp_id,
@@ -103,4 +118,3 @@ class HypothesisGenerator:
             defect_behavior=defect_behavior,
             rationale=rationale,
         )
-

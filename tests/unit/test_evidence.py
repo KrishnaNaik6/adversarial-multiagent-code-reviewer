@@ -66,4 +66,3 @@ def test_parse_invalid_test_execution() -> None:
         duration_ms=10.0,
     )
     assert result.outcome == ExecutionOutcome.INVALID_TEST
-

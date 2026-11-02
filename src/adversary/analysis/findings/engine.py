@@ -23,14 +23,18 @@ class FindingEngine:
         else:
             self.analyzers = analyzers
 
-    def analyze_repository(self, repo_path: Path, manifest: RepositoryManifest) -> list[CandidateFinding]:
+    def analyze_repository(
+        self, repo_path: Path, manifest: RepositoryManifest
+    ) -> list[CandidateFinding]:
         """Run all configured analyzers and deduplicate candidate findings."""
         raw_findings: list[CandidateFinding] = []
 
         for analyzer in self.analyzers:
             try:
                 analyzer_findings = analyzer.analyze(repo_path, manifest)
-                logger.info("Analyzer '%s' reported %d findings", analyzer.name, len(analyzer_findings))
+                logger.info(
+                    "Analyzer '%s' reported %d findings", analyzer.name, len(analyzer_findings)
+                )
                 raw_findings.extend(analyzer_findings)
             except Exception as e:
                 logger.warning("Analyzer '%s' encountered error: %s", analyzer.name, e)
@@ -70,4 +74,3 @@ class FindingEngine:
             )
 
         return normalized
-

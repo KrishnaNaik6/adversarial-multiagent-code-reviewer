@@ -19,6 +19,7 @@ from adversary.models.schemas import (
     VerificationDecision,
 )
 from adversary.orchestration.state import WorkflowContext, WorkflowState
+from adversary.persistence.repository import RunStore
 from adversary.repository.scanner import RepositoryScanner
 from adversary.sandbox.runner import DockerSandboxRunner
 from adversary.test_generation.breaker import BreakerAgent
@@ -38,6 +39,7 @@ class ReviewOrchestrator:
         self.breaker = BreakerAgent()
         self.sandbox = DockerSandboxRunner(config=self.config.sandbox)
         self.verifier = IndependentVerifier()
+        self.store = RunStore(self.config.db_path)
 
     def run(self, repo_path: Path) -> ReviewReport:
         """Execute full review pipeline from repository ingestion to verified report."""
@@ -50,17 +52,23 @@ class ReviewOrchestrator:
             canonical_repo = repo_path.resolve()
             logger.info("Stage 1: Scanning repository at %s", canonical_repo)
             manifest = self.scanner.scan(canonical_repo)
-            ctx.transition_to(WorkflowState.INDEXED, f"Indexed {len(manifest.source_files)} source files")
+            ctx.transition_to(
+                WorkflowState.INDEXED, f"Indexed {len(manifest.source_files)} source files"
+            )
 
             # Stage 2: Deterministic Static Analysis
             logger.info("Stage 2: Running deterministic static analyzers")
             raw_findings = self.finding_engine.analyze_repository(canonical_repo, manifest)
-            ctx.transition_to(WorkflowState.ANALYZED, f"Identified {len(raw_findings)} candidate findings")
+            ctx.transition_to(
+                WorkflowState.ANALYZED, f"Identified {len(raw_findings)} candidate findings"
+            )
 
             # Stage 3: Defect Hypothesis Formulation
             logger.info("Stage 3: Generating defect hypotheses")
             hypotheses = self.hypothesis_gen.generate_hypotheses(raw_findings, manifest)
-            ctx.transition_to(WorkflowState.HYPOTHESIZED, f"Formulated {len(hypotheses)} hypotheses")
+            ctx.transition_to(
+                WorkflowState.HYPOTHESIZED, f"Formulated {len(hypotheses)} hypotheses"
+            )
 
             # Stage 4: Adversarial Test Generation (Red Team)
             logger.info("Stage 4: Generating targeted adversarial tests")
@@ -72,7 +80,9 @@ class ReviewOrchestrator:
                     tests.extend(generated)
                 except Exception as e:
                     logger.warning("Test generation failed for hypothesis %s: %s", hyp.id, e)
-            ctx.transition_to(WorkflowState.TESTS_GENERATED, f"Generated {len(tests)} test artifacts")
+            ctx.transition_to(
+                WorkflowState.TESTS_GENERATED, f"Generated {len(tests)} test artifacts"
+            )
 
             # Stage 5: Sandbox Execution
             logger.info("Stage 5: Executing adversarial tests in sandbox")
@@ -87,7 +97,9 @@ class ReviewOrchestrator:
                     executions.append(res)
                 except Exception as e:
                     logger.warning("Sandbox execution failed for test %s: %s", test.id, e)
-            ctx.transition_to(WorkflowState.SANDBOX_EXECUTED, f"Executed {len(executions)} tests in sandbox")
+            ctx.transition_to(
+                WorkflowState.SANDBOX_EXECUTED, f"Executed {len(executions)} tests in sandbox"
+            )
 
             # Stage 6: Independent Verification
             logger.info("Stage 6: Evaluating execution evidence")
@@ -132,10 +144,26 @@ class ReviewOrchestrator:
             # Stage 7: Report Assembly
             summary_stats = {
                 "total_findings": len(updated_findings),
-                "confirmed": sum(1 for f in updated_findings if f.verification_status == VerificationStatus.CONFIRMED),
-                "disproved": sum(1 for f in updated_findings if f.verification_status == VerificationStatus.DISPROVED),
-                "inconclusive": sum(1 for f in updated_findings if f.verification_status == VerificationStatus.INCONCLUSIVE),
-                "unverified": sum(1 for f in updated_findings if f.verification_status == VerificationStatus.UNVERIFIED),
+                "confirmed": sum(
+                    1
+                    for f in updated_findings
+                    if f.verification_status == VerificationStatus.CONFIRMED
+                ),
+                "disproved": sum(
+                    1
+                    for f in updated_findings
+                    if f.verification_status == VerificationStatus.DISPROVED
+                ),
+                "inconclusive": sum(
+                    1
+                    for f in updated_findings
+                    if f.verification_status == VerificationStatus.INCONCLUSIVE
+                ),
+                "unverified": sum(
+                    1
+                    for f in updated_findings
+                    if f.verification_status == VerificationStatus.UNVERIFIED
+                ),
             }
 
             report = ReviewReport(
@@ -150,7 +178,15 @@ class ReviewOrchestrator:
                 summary=summary_stats,
             )
 
-            ctx.transition_to(WorkflowState.COMPLETED, f"Review completed with {summary_stats['confirmed']} confirmed defects")
+            ctx.transition_to(
+                WorkflowState.COMPLETED,
+                f"Review completed with {summary_stats['confirmed']} confirmed defects",
+            )
+
+            # Persist run to SQLite store
+            with contextlib.suppress(Exception):
+                self.store.save_run(report)
+
             return report
 
         except Exception as e:

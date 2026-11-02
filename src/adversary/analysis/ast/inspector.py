@@ -126,4 +126,3 @@ class ASTInspector:
             line_start=node.lineno,
             line_end=node.end_lineno or node.lineno,
         )
-

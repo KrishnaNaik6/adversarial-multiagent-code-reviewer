@@ -27,11 +27,31 @@ class WorkflowState(StrEnum):
 VALID_TRANSITIONS: dict[WorkflowState, set[WorkflowState]] = {
     WorkflowState.CREATED: {WorkflowState.INDEXED, WorkflowState.FAILED, WorkflowState.CANCELLED},
     WorkflowState.INDEXED: {WorkflowState.ANALYZED, WorkflowState.FAILED, WorkflowState.CANCELLED},
-    WorkflowState.ANALYZED: {WorkflowState.HYPOTHESIZED, WorkflowState.FAILED, WorkflowState.CANCELLED},
-    WorkflowState.HYPOTHESIZED: {WorkflowState.TESTS_GENERATED, WorkflowState.FAILED, WorkflowState.CANCELLED},
-    WorkflowState.TESTS_GENERATED: {WorkflowState.SANDBOX_EXECUTED, WorkflowState.FAILED, WorkflowState.CANCELLED},
-    WorkflowState.SANDBOX_EXECUTED: {WorkflowState.VERIFIED, WorkflowState.FAILED, WorkflowState.CANCELLED},
-    WorkflowState.VERIFIED: {WorkflowState.COMPLETED, WorkflowState.FAILED, WorkflowState.CANCELLED},
+    WorkflowState.ANALYZED: {
+        WorkflowState.HYPOTHESIZED,
+        WorkflowState.FAILED,
+        WorkflowState.CANCELLED,
+    },
+    WorkflowState.HYPOTHESIZED: {
+        WorkflowState.TESTS_GENERATED,
+        WorkflowState.FAILED,
+        WorkflowState.CANCELLED,
+    },
+    WorkflowState.TESTS_GENERATED: {
+        WorkflowState.SANDBOX_EXECUTED,
+        WorkflowState.FAILED,
+        WorkflowState.CANCELLED,
+    },
+    WorkflowState.SANDBOX_EXECUTED: {
+        WorkflowState.VERIFIED,
+        WorkflowState.FAILED,
+        WorkflowState.CANCELLED,
+    },
+    WorkflowState.VERIFIED: {
+        WorkflowState.COMPLETED,
+        WorkflowState.FAILED,
+        WorkflowState.CANCELLED,
+    },
     WorkflowState.COMPLETED: set(),
     WorkflowState.FAILED: set(),
     WorkflowState.CANCELLED: set(),
@@ -44,7 +64,9 @@ class WorkflowContext:
     def __init__(self, run_id: str) -> None:
         self.run_id = run_id
         self.current_state: WorkflowState = WorkflowState.CREATED
-        self.history: list[dict[str, Any]] = [{"state": self.current_state, "message": "Workflow created"}]
+        self.history: list[dict[str, Any]] = [
+            {"state": self.current_state, "message": "Workflow created"}
+        ]
 
     def transition_to(self, new_state: WorkflowState, message: str = "") -> None:
         """Enforce valid state transition graph."""

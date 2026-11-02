@@ -3,4 +3,3 @@
 from adversary.evidence.collector import EvidenceCollector
 
 __all__ = ["EvidenceCollector"]
-

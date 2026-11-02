@@ -52,7 +52,9 @@ class DockerSandboxRunner:
                     timeout_seconds=effective_timeout,
                 )
             else:
-                logger.info("Docker daemon not reachable; falling back to local isolated process execution")
+                logger.info(
+                    "Docker daemon not reachable; falling back to local isolated process execution"
+                )
                 return self._run_local_fallback(
                     repo_path=repo_path.resolve(),
                     test_file=test_file,
@@ -129,8 +131,16 @@ class DockerSandboxRunner:
             )
         except subprocess.TimeoutExpired as e:
             duration_ms = (time.perf_counter() - start_time) * 1000
-            stdout_str = e.stdout.decode("utf-8", errors="replace") if isinstance(e.stdout, bytes) else (e.stdout or "")
-            stderr_str = e.stderr.decode("utf-8", errors="replace") if isinstance(e.stderr, bytes) else (e.stderr or "")
+            stdout_str = (
+                e.stdout.decode("utf-8", errors="replace")
+                if isinstance(e.stdout, bytes)
+                else (e.stdout or "")
+            )
+            stderr_str = (
+                e.stderr.decode("utf-8", errors="replace")
+                if isinstance(e.stderr, bytes)
+                else (e.stderr or "")
+            )
             return self.evidence_collector.parse_execution(
                 test_id=test_artifact.id,
                 exit_code=-1,
@@ -185,8 +195,16 @@ class DockerSandboxRunner:
             )
         except subprocess.TimeoutExpired as e:
             duration_ms = (time.perf_counter() - start_time) * 1000
-            stdout_str = e.stdout.decode("utf-8", errors="replace") if isinstance(e.stdout, bytes) else (e.stdout or "")
-            stderr_str = e.stderr.decode("utf-8", errors="replace") if isinstance(e.stderr, bytes) else (e.stderr or "")
+            stdout_str = (
+                e.stdout.decode("utf-8", errors="replace")
+                if isinstance(e.stdout, bytes)
+                else (e.stdout or "")
+            )
+            stderr_str = (
+                e.stderr.decode("utf-8", errors="replace")
+                if isinstance(e.stderr, bytes)
+                else (e.stderr or "")
+            )
             return self.evidence_collector.parse_execution(
                 test_id=test_artifact.id,
                 exit_code=-1,

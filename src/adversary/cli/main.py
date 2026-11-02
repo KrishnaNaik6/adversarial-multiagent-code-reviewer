@@ -104,7 +104,19 @@ def findings(
     run_id: str | None = typer.Option(None, "--run-id", help="Review run ID (defaults to latest)"),
 ) -> None:
     """List findings and their evidence verification status."""
-    table = Table(title=f"Findings {f'for Run {run_id}' if run_id else '(Latest)'}")
+    from adversary.persistence.repository import RunStore
+
+    store = RunStore()
+    report = store.get_run(run_id) if run_id else store.get_latest_run()
+    if not report or not report.findings:
+        console.print(
+            "[dim]No findings recorded yet. Run `adversary review <path>` to begin.[/dim]"
+        )
+        return
+
+    table = Table(
+        title=f"Findings {f'for Run {run_id}' if run_id else f'(Latest: {report.run_id})'}"
+    )
     table.add_column("ID", style="cyan", no_wrap=True)
     table.add_column("Title", style="bold")
     table.add_column("Category", style="magenta")
@@ -112,8 +124,18 @@ def findings(
     table.add_column("Status", style="green")
     table.add_column("Location", style="yellow")
 
+    for f in report.findings:
+        status_color = "green" if f.verification_status.value == "confirmed" else "dim"
+        table.add_row(
+            f.id,
+            f.title,
+            f.category.value,
+            f.severity.value,
+            f"[{status_color}]{f.verification_status.value.upper()}[/{status_color}]",
+            f"{f.location.file_path}:{f.location.line_start}",
+        )
+
     console.print(table)
-    console.print("[dim]No findings recorded yet. Run `adversary review <path>` to begin.[/dim]")
 
 
 @app.command()
@@ -121,8 +143,75 @@ def explain(
     finding_id: str = typer.Argument(..., help="ID of finding to explain (e.g. FIND-001)"),
 ) -> None:
     """Explain a finding, its defect hypothesis, adversarial test, and evidence."""
-    console.print(f"[bold cyan]Finding Details:[/bold cyan] {finding_id}")
-    console.print("[dim]Querying persistence store for finding evidence...[/dim]")
+    from adversary.persistence.repository import RunStore
+
+    store = RunStore()
+    details = store.get_finding_details(finding_id)
+    if not details:
+        console.print(f"[bold red]Finding {finding_id} not found in database.[/bold red]")
+        return
+
+    f = details["finding"]
+    h = details.get("hypothesis")
+    t = details.get("test")
+    e = details.get("execution")
+    d = details.get("decision")
+
+    console.print(
+        Panel(
+            f"[bold cyan]Finding:[/bold cyan] {f.id} - {f.title}\n"
+            f"[bold]Location:[/bold] {f.location.file_path}:{f.location.line_start}\n"
+            f"[bold]Category:[/bold] {f.category.value} | [bold]Severity:[/bold] {f.severity.value.upper()}\n"
+            f"[bold]Status:[/bold] [bold green]{f.verification_status.value.upper()}[/bold green]\n"
+            f"[dim]Rule:[/dim] {f.rule_id} ({f.originating_tool})",
+            title=f"Finding Details: {f.id}",
+            border_style="cyan",
+        )
+    )
+
+    if h:
+        console.print(
+            Panel(
+                f"[bold]Preconditions:[/bold] {h.preconditions}\n"
+                f"[bold]Trigger Input:[/bold] {h.trigger_input}\n"
+                f"[bold]Expected Behavior:[/bold] {h.expected_behavior}\n"
+                f"[bold]Observed Defect:[/bold] {h.defect_behavior}\n"
+                f"[dim]Rationale:[/dim] {h.rationale}",
+                title=f"Defect Hypothesis: {h.id}",
+                border_style="magenta",
+            )
+        )
+
+    if t:
+        console.print(
+            Panel(
+                f"[dim]# Strategy: {t.strategy}[/dim]\n{t.code.strip()}",
+                title=f"Adversarial Reproduction Test: {t.file_name}",
+                border_style="yellow",
+            )
+        )
+
+    if e:
+        tb_text = e.traceback_summary or e.stderr or e.stdout or "No traceback captured"
+        console.print(
+            Panel(
+                f"[bold]Exit Code:[/bold] {e.exit_code} | [bold]Exception:[/bold] {e.exception_name or 'N/A'}\n"
+                f"[bold]Duration:[/bold] {e.duration_ms:.2f} ms\n\n"
+                f"[bold red]Traceback Output:[/bold red]\n{tb_text.strip()}",
+                title=f"Execution Evidence: {e.id}",
+                border_style="red" if e.exit_code != 0 else "green",
+            )
+        )
+
+    if d:
+        console.print(
+            Panel.fit(
+                f"[bold]Verification Decision:[/bold] {d.status.value.upper()}\n"
+                f"[dim]{d.explanation}[/dim]",
+                title="Independent Verification Decision",
+                border_style="green" if d.status.value == "confirmed" else "blue",
+            )
+        )
 
 
 @app.command()
@@ -156,7 +245,27 @@ def report(
     ),
 ) -> None:
     """Generate review report in Markdown or JSON format."""
-    console.print(f"[bold green]Generating report[/bold green] (format: {format_type})")
+    from adversary.persistence.repository import RunStore
+    from adversary.reporting.json_reporter import JSONReporter
+    from adversary.reporting.markdown import MarkdownReporter
+
+    store = RunStore()
+    latest = store.get_latest_run()
+    if not latest:
+        console.print("[bold red]No review runs found to report on.[/bold red]")
+        raise typer.Exit(code=1)
+
+    if format_type.lower() == "json":
+        content = JSONReporter().generate_report(latest)
+    else:
+        content = MarkdownReporter().generate_report(latest)
+
+    if output_file:
+        output_file.parent.mkdir(parents=True, exist_ok=True)
+        output_file.write_text(content, encoding="utf-8")
+        console.print(f"[bold green][OK][/bold green] Report saved to [cyan]{output_file}[/cyan]")
+    else:
+        console.print(content)
 
 
 if __name__ == "__main__":
