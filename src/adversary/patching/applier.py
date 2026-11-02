@@ -31,31 +31,35 @@ class PatchApplier:
         if not target_file.exists():
             raise PatchError(f"Target file to patch does not exist: {target_file}")
 
-        # Parse simple additions from unified diff
-        diff_lines = patch.diff.splitlines()
-        added_lines: list[str] = []
-        target_line_num: int = 1
+        if patch.patched_content is not None:
+            target_file.write_text(patch.patched_content, encoding="utf-8")
+        else:
+            # Parse simple additions from unified diff
+            diff_lines = patch.diff.splitlines()
+            added_lines: list[str] = []
+            target_line_num: int = 1
 
-        for line in diff_lines:
-            if line.startswith("@@"):
-                # e.g., @@ -8,3 +8,5 @@
-                match = re.search(r"\+(\d+)", line)
-                if match:
-                    target_line_num = int(match.group(1))
-            elif line.startswith("+") and not line.startswith("+++"):
-                added_lines.append(line[1:])
+            for line in diff_lines:
+                if line.startswith("@@"):
+                    # e.g., @@ -8,3 +8,5 @@
+                    match = re.search(r"\+(\d+)", line)
+                    if match:
+                        target_line_num = int(match.group(1))
+                elif line.startswith("+") and not line.startswith("+++"):
+                    added_lines.append(line[1:])
 
-        if not added_lines:
-            raise PatchError("Could not extract patch additions from diff.")
+            if not added_lines:
+                raise PatchError("Could not extract patch additions from diff.")
 
-        original_lines = target_file.read_text(encoding="utf-8").splitlines(keepends=True)
-        insert_idx = max(0, min(target_line_num - 1, len(original_lines)))
+            original_lines = target_file.read_text(encoding="utf-8").splitlines(keepends=True)
+            insert_idx = max(0, min(target_line_num - 1, len(original_lines)))
 
-        # Insert added lines
-        for added in reversed(added_lines):
-            original_lines.insert(insert_idx, added + "\n")
+            # Insert added lines
+            for added in reversed(added_lines):
+                original_lines.insert(insert_idx, added + "\n")
 
-        target_file.write_text("".join(original_lines), encoding="utf-8")
+            target_file.write_text("".join(original_lines), encoding="utf-8")
+
         patch.applied_to_repo = True
         logger.info("Successfully applied patch %s to %s with human approval.", patch.id, target_file)
         return True

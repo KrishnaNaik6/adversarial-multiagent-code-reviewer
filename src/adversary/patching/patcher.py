@@ -108,6 +108,7 @@ class BlueTeamPatcher:
                 adversarial_test_passed=adversarial_passed,
                 regression_tests_passed=regression_passed,
                 applied_to_repo=False,
+                patched_content=patched_code,
             )
 
             logger.info("Formulated patch %s with status %s", patch_artifact.id, status)

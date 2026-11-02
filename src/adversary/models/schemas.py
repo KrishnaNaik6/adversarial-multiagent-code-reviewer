@@ -159,6 +159,7 @@ class PatchArtifact(BaseModel):
     adversarial_test_passed: bool = False
     regression_tests_passed: bool = False
     applied_to_repo: bool = False
+    patched_content: str | None = None
 
 
 class ReviewReport(BaseModel):
