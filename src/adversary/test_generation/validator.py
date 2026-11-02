@@ -19,7 +19,8 @@ class SafetyVisitor(ast.NodeVisitor):
 
     def visit_Import(self, node: ast.Import) -> None:
         for alias in node.names:
-            if alias.name in DISALLOWED_MODULES:
+            root_mod = alias.name.split(".")[0]
+            if root_mod in DISALLOWED_MODULES:
                 self.violations.append(f"Disallowed module import in test: {alias.name}")
         self.generic_visit(node)
 

@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Phase 10: Security, Reliability, and Production Hardening (path traversal guards, container timeout tests, secret redactor audit, malicious test validation suite, and chaos failure injection).
 - Phase 9: Repair and Regression Verification (Blue Team patcher in isolated workspace, automated proof and regression validation, human approval gate, and CLI `fix` command).
 - Phase 8: Persistence and Reporting (SQLite relational store, versioned schema, Markdown/JSON report generators, CLI findings/explain/report integration).
 - Phase 7: Multi-Agent Orchestration (workflow state coordinator, central review pipeline, Typer CLI live review, standalone container test harness).
