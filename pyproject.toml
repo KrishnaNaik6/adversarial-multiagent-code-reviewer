@@ -38,6 +38,11 @@ packages = ["src/adversary"]
 [tool.ruff]
 line-length = 100
 target-version = "py312"
+exclude = [
+    ".git",
+    ".venv",
+    "tests/fixtures",
+]
 
 [tool.ruff.lint]
 select = [

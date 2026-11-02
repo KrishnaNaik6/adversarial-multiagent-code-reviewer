@@ -13,8 +13,8 @@
 | **Phase 0** | Environment and Project Baseline | **PASS** | Tool versions confirmed, Docker hello-world verified, base docs created |
 | **Phase 1** | Foundation and Core Contracts | **PASS** | Package installed, 12 unit tests passing, ruff & mypy clean, CLI operational |
 | **Phase 2** | Repository Intelligence | **PASS** | File discovery, path guards, AST symbol extraction & git metadata passing |
-| **Phase 3** | Deterministic Analysis & Findings | **IN PROGRESS** | Pending implementation |
-| **Phase 4** | Adversarial Test Generation | PENDING | - |
+| **Phase 3** | Deterministic Analysis & Findings | **PASS** | AST rules, Ruff adapter, finding deduplication & hypothesis engine passing |
+| **Phase 4** | Adversarial Test Generation | **IN PROGRESS** | Pending implementation |
 | **Phase 5** | Docker Sandbox & Evidence Collection | PENDING | - |
 | **Phase 6** | Independent Verification Engine | PENDING | - |
 | **Phase 7** | Multi-Agent Orchestration | PENDING | - |
@@ -68,17 +68,17 @@
   - `mypy src tests`: PASS (23 source files clean).
 - **Status:** **PASS**
 
-### Phase 2: Repository Intelligence
-- **Objectives:** Safe repository discovery, AST analysis, symbol extraction, git revision capture, safe path handling, and syntax error resilience.
+### Phase 3: Deterministic Analysis and Finding Engine
+- **Objectives:** Implement static analysis adapters (Ruff, deterministic AST rules), finding normalization, deduplication, defect hypothesis formulation, and evaluation fixtures.
 - **Implemented Functionality:**
-  - `adversary.repository.scanner`: Safe file discovery, path traversal/symlink guards, test file vs source file segregation, SHA-256 fingerprinting.
-  - `adversary.repository.git`: Git commit hash and active branch detection.
-  - `adversary.analysis.ast.inspector`: Python AST parser extracting modules, classes, methods, functions, docstrings, parameter types, returns, and function call references.
-  - Robust syntax error handling and non-crashing graceful fallback.
-  - Unit tests (`tests/unit/test_repository.py`, `tests/unit/test_ast.py`).
+  - `adversary.analysis.static.ast_rules.DeterministicASTAnalyzer`: Pattern rules for division by zero (`AST-DIV-001`, `AST-DIV-002`), mutable default arguments (`AST-MUT-001`), insecure shell execution (`AST-SEC-001`, `AST-SEC-002`), and swallowed exceptions (`AST-EXC-001`). Includes guard detection to avoid false positives on clean code.
+  - `adversary.analysis.static.ruff_adapter.RuffAnalyzer`: Executes Ruff with JSON output parsing and severity/category mapping.
+  - `adversary.analysis.findings.engine.FindingEngine`: Aggregates and deduplicates overlapping diagnostics, assigning sequential candidate IDs (`FIND-001`, ...).
+  - `adversary.hypotheses.generator.HypothesisGenerator`: Translates findings into formal `DefectHypothesis` models with preconditions, trigger inputs, expected behavior, and rationale.
+  - Evaluation fixtures (`tests/fixtures/sample_repo/buggy.py` and `clean.py`).
+  - Unit tests (`tests/unit/test_analysis.py`).
 - **Verification Results:**
-  - `pytest`: 17 passed.
+  - `pytest`: 20 passed.
   - `ruff check .`: PASS (0 errors).
-  - `mypy src tests`: PASS (23 source files clean).
+  - `mypy src tests`: PASS (33 source files clean).
 - **Status:** **PASS**
-

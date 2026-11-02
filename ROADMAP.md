@@ -19,7 +19,7 @@
   - SHA-256 source fingerprinting for evidence staleness checks.
   - Manifest generation and test fixtures.
 
-- [ ] **Phase 3 — Deterministic Analysis and Finding Engine**
+- [x] **Phase 3 — Deterministic Analysis and Finding Engine**
   - Ruff analyzer integration.
   - Deterministic AST vulnerability and anti-pattern detectors (e.g. division by zero, unhandled None, resource leak, mutable default argument, command injection).
   - Finding normalization, deduplication, and `DefectHypothesis` model generation.
