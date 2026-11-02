@@ -12,8 +12,8 @@
 |---|---|---|---|
 | **Phase 0** | Environment and Project Baseline | **PASS** | Tool versions confirmed, Docker hello-world verified, base docs created |
 | **Phase 1** | Foundation and Core Contracts | **PASS** | Package installed, 12 unit tests passing, ruff & mypy clean, CLI operational |
-| **Phase 2** | Repository Intelligence | **IN PROGRESS** | Pending implementation |
-| **Phase 3** | Deterministic Analysis & Findings | PENDING | - |
+| **Phase 2** | Repository Intelligence | **PASS** | File discovery, path guards, AST symbol extraction & git metadata passing |
+| **Phase 3** | Deterministic Analysis & Findings | **IN PROGRESS** | Pending implementation |
 | **Phase 4** | Adversarial Test Generation | PENDING | - |
 | **Phase 5** | Docker Sandbox & Evidence Collection | PENDING | - |
 | **Phase 6** | Independent Verification Engine | PENDING | - |
@@ -52,5 +52,33 @@
   - `ruff check .`: PASS (0 errors).
   - `mypy src tests`: PASS (16 source files clean).
   - `adversary version`: Verified CLI binary and output.
+- **Status:** **PASS**
+
+### Phase 2: Repository Intelligence
+- **Objectives:** Safe repository discovery, AST analysis, symbol extraction, git revision capture, safe path handling, and syntax error resilience.
+- **Implemented Functionality:**
+  - `adversary.repository.scanner`: Safe file discovery, path traversal/symlink guards, test file vs source file segregation, SHA-256 fingerprinting.
+  - `adversary.repository.git`: Git commit hash and active branch detection.
+  - `adversary.analysis.ast.inspector`: Python AST parser extracting modules, classes, methods, functions, docstrings, parameter types, returns, and function call references.
+  - Robust syntax error handling and non-crashing graceful fallback.
+  - Unit tests (`tests/unit/test_repository.py`, `tests/unit/test_ast.py`).
+- **Verification Results:**
+  - `pytest`: 17 passed.
+  - `ruff check .`: PASS (0 errors).
+  - `mypy src tests`: PASS (23 source files clean).
+- **Status:** **PASS**
+
+### Phase 2: Repository Intelligence
+- **Objectives:** Safe repository discovery, AST analysis, symbol extraction, git revision capture, safe path handling, and syntax error resilience.
+- **Implemented Functionality:**
+  - `adversary.repository.scanner`: Safe file discovery, path traversal/symlink guards, test file vs source file segregation, SHA-256 fingerprinting.
+  - `adversary.repository.git`: Git commit hash and active branch detection.
+  - `adversary.analysis.ast.inspector`: Python AST parser extracting modules, classes, methods, functions, docstrings, parameter types, returns, and function call references.
+  - Robust syntax error handling and non-crashing graceful fallback.
+  - Unit tests (`tests/unit/test_repository.py`, `tests/unit/test_ast.py`).
+- **Verification Results:**
+  - `pytest`: 17 passed.
+  - `ruff check .`: PASS (0 errors).
+  - `mypy src tests`: PASS (23 source files clean).
 - **Status:** **PASS**
 

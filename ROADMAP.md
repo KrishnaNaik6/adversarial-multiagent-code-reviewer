@@ -13,7 +13,7 @@
   - Typer CLI entry point skeleton (`adversary --help`).
   - Unit tests for models, config, and CLI.
 
-- [ ] **Phase 2 — Repository Intelligence**
+- [x] **Phase 2 — Repository Intelligence**
   - File scanner with path traversal/symlink guards.
   - Python AST analysis: extract modules, classes, functions, imports, docstrings, calls, tests.
   - SHA-256 source fingerprinting for evidence staleness checks.
