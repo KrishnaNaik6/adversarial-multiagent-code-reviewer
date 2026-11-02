@@ -52,7 +52,7 @@
   - Store review runs, candidate findings, hypotheses, generated tests, raw evidence, and verification decisions.
   - JSON and GitHub-flavored Markdown report generators.
 
-- [ ] **Phase 9 — Repair and Regression Verification**
+- [x] **Phase 9 — Repair and Regression Verification**
   - Blue Team / Patcher agent (`adversary.patching`).
   - Minimal diff generation in isolated temporary workspace.
   - Re-run adversarial proof tests (must turn to PASS) and existing test suite (must PASS).

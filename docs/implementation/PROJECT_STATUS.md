@@ -19,8 +19,8 @@
 | **Phase 6** | Independent Verification Engine | **PASS** | Evidence attribution, outcome classification & false-failure rejection passing |
 | **Phase 7** | Multi-Agent Orchestration | **PASS** | State machine coordinator, full closed-loop review pipeline & CLI integration |
 | **Phase 8** | Persistence and Reporting | **PASS** | SQLite store, Markdown & JSON reports, CLI findings/explain/report passing |
-| **Phase 9** | Repair & Regression Verification | **IN PROGRESS** | Pending implementation |
-| **Phase 10** | Security Hardening & Audit | PENDING | - |
+| **Phase 9** | Repair & Regression Verification | **PASS** | Blue Team patcher in isolated copy, regression verification & human approval gate |
+| **Phase 10** | Security Hardening & Audit | **IN PROGRESS** | Pending implementation |
 | **Phase 11** | Integration & Release Readiness | PENDING | - |
 
 ---
@@ -147,4 +147,18 @@
   - `ruff check .`: PASS (0 errors).
   - `mypy src tests`: PASS (59 source files clean).
   - Live CLI commands verified (`adversary findings`, `adversary explain FIND-001`, `adversary report`).
+- **Status:** **PASS**
+
+### Phase 9: Repair and Regression Verification
+- **Objectives:** Blue Team / Patcher agent proposing minimal patches, verifying repairs in isolated working copies, running adversarial tests and regression suites, and strictly enforcing human approval before repository modification.
+- **Implemented Functionality:**
+  - `adversary.patching.patcher.BlueTeamPatcher`: Proposes minimal localized fixes, copies repository to isolated scratch workspace, tests adversarial reproduction (must turn to PASS) and regression test suite (must PASS), and generates unified diff.
+  - `adversary.patching.applier.PatchApplier`: Strict human approval gate refusing modification unless `human_approved=True`.
+  - Typer CLI `fix <finding-id>` command showing diff preview and `--apply` confirmation flag.
+  - Unit tests (`tests/unit/test_patching.py`).
+- **Verification Results:**
+  - `pytest`: 44 passed.
+  - `ruff check .`: PASS (0 errors).
+  - `mypy src tests`: PASS (63 source files clean).
+  - Live CLI command verified (`adversary fix FIND-001` with validated patch preview).
 - **Status:** **PASS**

@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Phase 9: Repair and Regression Verification (Blue Team patcher in isolated workspace, automated proof and regression validation, human approval gate, and CLI `fix` command).
 - Phase 8: Persistence and Reporting (SQLite relational store, versioned schema, Markdown/JSON report generators, CLI findings/explain/report integration).
 - Phase 7: Multi-Agent Orchestration (workflow state coordinator, central review pipeline, Typer CLI live review, standalone container test harness).
 - Phase 6: Independent Verification Engine (evidence attribution engine, target path checks, strict outcome classification, and false-failure rejection).

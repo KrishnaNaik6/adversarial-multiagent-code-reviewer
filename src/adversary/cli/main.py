@@ -230,9 +230,67 @@ def fix(
     ),
 ) -> None:
     """Generate minimal patch and run regression validation in an isolated workspace."""
-    console.print(
-        f"[bold magenta]Proposing repair for:[/bold magenta] {finding_id} (apply={apply})"
+    from adversary.patching.applier import PatchApplier
+    from adversary.patching.patcher import BlueTeamPatcher
+    from adversary.persistence.repository import RunStore
+
+    store = RunStore()
+    details = store.get_finding_details(finding_id)
+    if not details:
+        console.print(f"[bold red]Finding {finding_id} not found in database.[/bold red]")
+        raise typer.Exit(code=1)
+
+    f = details["finding"]
+    h = details.get("hypothesis")
+    t = details.get("test")
+    repo_path = Path(details["repo_path"])
+
+    if not h or not t:
+        console.print(f"[bold red]Finding {finding_id} does not have required hypothesis or test proof.[/bold red]")
+        raise typer.Exit(code=1)
+
+    console.print(f"[bold magenta][*] Proposing repair for:[/bold magenta] {finding_id}")
+
+    patcher = BlueTeamPatcher()
+    patch = patcher.propose_and_verify_repair(
+        finding=f,
+        hypothesis=h,
+        reproduction_test=t,
+        repo_path=repo_path,
     )
+
+    if not patch:
+        console.print("[bold red]Could not formulate a valid deterministic repair for this finding.[/bold red]")
+        raise typer.Exit(code=1)
+
+    console.print(
+        Panel(
+            patch.diff.strip(),
+            title=f"Proposed Minimal Patch: {patch.id}",
+            border_style="cyan",
+        )
+    )
+
+    console.print(
+        Panel.fit(
+            f"Adversarial Reproduction Test: [{'green' if patch.adversarial_test_passed else 'red'}]{'PASSED' if patch.adversarial_test_passed else 'FAILED'}[/]\n"
+            f"Existing Regression Tests: [{'green' if patch.regression_tests_passed else 'red'}]{'PASSED' if patch.regression_tests_passed else 'FAILED'}[/]\n"
+            f"Repair Status: [bold green]{patch.repair_status.value.upper()}[/bold green]",
+            title="Regression & Proof Verification",
+            border_style="green" if patch.repair_status.value == "validated" else "yellow",
+        )
+    )
+
+    if apply:
+        applier = PatchApplier()
+        try:
+            applier.apply_patch(patch, repo_path=repo_path, human_approved=True)
+            console.print("[bold green][OK] Patch successfully applied to repository working tree.[/bold green]")
+        except Exception as err:
+            console.print(f"[bold red]Failed to apply patch:[/bold red] {err}")
+            raise typer.Exit(code=1) from err
+    else:
+        console.print("[dim]Review the diff above. To apply this patch to your repository, re-run with: [bold]adversary fix " + finding_id + " --apply[/bold][/dim]")
 
 
 @app.command()

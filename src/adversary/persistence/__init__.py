@@ -3,3 +3,4 @@
 from adversary.persistence.repository import RunStore
 
 __all__ = ["RunStore"]
+

@@ -4,3 +4,4 @@ from adversary.reporting.json_reporter import JSONReporter
 from adversary.reporting.markdown import MarkdownReporter
 
 __all__ = ["MarkdownReporter", "JSONReporter"]
+
