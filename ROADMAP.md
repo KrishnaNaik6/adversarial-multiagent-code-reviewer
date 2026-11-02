@@ -36,7 +36,7 @@
   - Robust execution manager with graceful fallback when Docker is unavailable or for local mocking.
   - Result parsing: exit code, stdout/stderr, exception traceback extraction, execution metrics.
 
-- [ ] **Phase 6 — Independent Verification Engine**
+- [x] **Phase 6 — Independent Verification Engine**
   - Verification agent (`adversary.verification`).
   - Evidence attribution: verify exception originates in target code under test.
   - Classify outcome: `CONFIRMED`, `DISPROVED`, `INCONCLUSIVE`, `UNVERIFIED`, `EXECUTION_ERROR`.

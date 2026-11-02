@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Phase 6: Independent Verification Engine (evidence attribution engine, target path checks, strict outcome classification, and false-failure rejection).
 - Phase 5: Docker Sandbox and Evidence Collection (isolated container runner, `--network none` restriction, resource bounds, pytest evidence parser, traceback extractor, and read-only host protection).
 - Phase 4: Adversarial Test Generation (Red Team Breaker agent, AST-based test syntax and safety validator, hypothesis-linked adversarial test templates).
 - Phase 3: Deterministic Analysis and Finding Engine (AST defect rules with false-positive guard tracking, Ruff analyzer adapter, finding deduplication engine, formal defect hypothesis generator, and test fixtures).
