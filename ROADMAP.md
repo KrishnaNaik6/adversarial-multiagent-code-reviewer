@@ -25,7 +25,7 @@
   - Finding normalization, deduplication, and `DefectHypothesis` model generation.
   - Known positive/negative test fixtures.
 
-- [ ] **Phase 4 — Adversarial Test Generation**
+- [x] **Phase 4 — Adversarial Test Generation**
   - Red Team / Breaker agent implementation.
   - Boundary value, empty input, exception path, and property-based test generation.
   - Generated test syntax validator and safety scanner.

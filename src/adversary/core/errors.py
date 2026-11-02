@@ -31,6 +31,8 @@ class AnalysisError(AdversaryError):
 class TestGenerationError(AdversaryError):
     """Raised when adversarial test generation or validation fails."""
 
+    __test__ = False
+
 
 class SandboxError(AdversaryError):
     """Raised when Docker sandbox operations fail."""

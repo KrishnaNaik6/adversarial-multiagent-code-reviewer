@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Phase 4: Adversarial Test Generation (Red Team Breaker agent, AST-based test syntax and safety validator, hypothesis-linked adversarial test templates).
 - Phase 3: Deterministic Analysis and Finding Engine (AST defect rules with false-positive guard tracking, Ruff analyzer adapter, finding deduplication engine, formal defect hypothesis generator, and test fixtures).
 - Phase 2: Repository Intelligence (safe filesystem discovery, path traversal/symlink guards, Python AST symbol analysis, git revision capture, line counting, and content hashing).
 - Phase 1: Foundation and Core Contracts (domain models, configuration, error taxonomy, secret redactor, protocols, Typer CLI, and unit test suite).
