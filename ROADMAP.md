@@ -31,7 +31,7 @@
   - Generated test syntax validator and safety scanner.
   - Hypothesis-to-test traceability preservation.
 
-- [ ] **Phase 5 — Docker Sandbox and Evidence Collection**
+- [x] **Phase 5 — Docker Sandbox and Evidence Collection**
   - Docker sandbox runner (`adversary.sandbox`) with resource limits (RAM, CPU, PID, timeout) and `--network none`.
   - Robust execution manager with graceful fallback when Docker is unavailable or for local mocking.
   - Result parsing: exit code, stdout/stderr, exception traceback extraction, execution metrics.

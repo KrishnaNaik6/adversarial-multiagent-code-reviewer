@@ -15,8 +15,8 @@
 | **Phase 2** | Repository Intelligence | **PASS** | File discovery, path guards, AST symbol extraction & git metadata passing |
 | **Phase 3** | Deterministic Analysis & Findings | **PASS** | AST rules, Ruff adapter, finding deduplication & hypothesis engine passing |
 | **Phase 4** | Adversarial Test Generation | **PASS** | Breaker agent, test validator, boundary/exception/state test templates passing |
-| **Phase 5** | Docker Sandbox & Evidence Collection | **IN PROGRESS** | Pending implementation |
-| **Phase 6** | Independent Verification Engine | PENDING | - |
+| **Phase 5** | Docker Sandbox & Evidence Collection | **PASS** | Container isolation, fallback execution, evidence parsing & outcome classification |
+| **Phase 6** | Independent Verification Engine | **IN PROGRESS** | Pending implementation |
 | **Phase 7** | Multi-Agent Orchestration | PENDING | - |
 | **Phase 8** | Persistence and Reporting | PENDING | - |
 | **Phase 9** | Repair & Regression Verification | PENDING | - |
@@ -93,4 +93,16 @@
   - `pytest`: 26 passed.
   - `ruff check .`: PASS (0 errors).
   - `mypy src tests`: PASS (37 source files clean).
+- **Status:** **PASS**
+
+### Phase 5: Docker Sandbox and Evidence Collection
+- **Objectives:** Container lifecycle management, strict resource and security bounds (read-only mounts, no network, non-root, timeouts), evidence collection, traceback extraction, and outcome classification.
+- **Implemented Functionality:**
+  - `adversary.evidence.collector.EvidenceCollector`: Robust parser extracting exception names, pytest failure blocks, exit codes, execution duration, and classifying outcomes (`PASSED`, `FAILED`, `TIMED_OUT`, `INVALID_TEST`, `ERROR`).
+  - `adversary.sandbox.runner.DockerSandboxRunner`: Manages restricted container executions with `--network none`, memory quotas, ephemeral directories, read-only host mounts, and reliable local fallback runner.
+  - Unit tests (`tests/unit/test_evidence.py`, `tests/unit/test_sandbox.py`).
+- **Verification Results:**
+  - `pytest`: 31 passed.
+  - `ruff check .`: PASS (0 errors).
+  - `mypy src tests`: PASS (43 source files clean).
 - **Status:** **PASS**
