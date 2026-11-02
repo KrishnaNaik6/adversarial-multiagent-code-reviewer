@@ -6,7 +6,7 @@
   - Tool verification (Python 3.12+, Git, Docker, Docker Compose, WSL2).
   - Safety baseline, `.gitignore`, and foundational documentation (`ARCHITECTURE.md`, `DECISIONS.md`, `SECURITY.md`, `ROADMAP.md`, `CHANGELOG.md`, `ENVIRONMENT_REPORT.md`, `PROJECT_STATUS.md`).
 
-- [ ] **Phase 1 — Foundation and Core Contracts**
+- [x] **Phase 1 — Foundation and Core Contracts**
   - `pyproject.toml` with pinned dependencies (Typer, Rich, Pydantic, Pydantic Settings, pytest, Ruff, mypy).
   - Package structure: `adversary.core`, `adversary.config`, `adversary.models`.
   - Error taxonomy, structured logging with secret redaction, typed domain models.
@@ -66,3 +66,4 @@
   - End-to-end integration tests on sample repositories with seeded defects.
   - Full CLI command verification (`init`, `review`, `findings`, `explain`, `verify`, `fix`, `report`).
   - Release documentation, packaging verification, and final sign-off.
+

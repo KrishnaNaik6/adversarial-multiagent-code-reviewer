@@ -53,3 +53,4 @@ htmlcov/
 *.sqlite3
 artifacts/run_*
 artifacts/reports/
+

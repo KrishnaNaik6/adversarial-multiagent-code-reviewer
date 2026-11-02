@@ -8,4 +8,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Phase 1: Foundation and Core Contracts (domain models, configuration, error taxonomy, secret redactor, protocols, Typer CLI, and unit test suite).
 - Phase 0: Initialized project baseline, environment verification, security policy, architectural specifications, and implementation roadmap.
+

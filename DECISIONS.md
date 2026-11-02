@@ -40,3 +40,4 @@ This document records the architectural and technology decisions established for
 - **Adversarial Testing:** pytest, Hypothesis.
 - **Persistence:** SQLite with versioned schema for run history, findings, and evidence traceability.
 - **Reporting:** Structured JSON (machine-readable) and GitHub-flavored Markdown (developer-readable).
+

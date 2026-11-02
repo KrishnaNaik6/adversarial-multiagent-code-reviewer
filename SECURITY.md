@@ -49,3 +49,4 @@ Untrusted components include:
 - **Risk:** Review reports or logs print API keys, tokens, or sensitive variables found in source files.
 - **Mitigation:**
   - Sensitive regex redactor scrubs potential secrets, tokens, and keys from logs, tracebacks, and generated reports before persistence or output.
+

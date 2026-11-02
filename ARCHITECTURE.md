@@ -100,3 +100,4 @@ src/adversary/
 ├── persistence/       # SQLite database, schema migrations & repositories
 └── reporting/         # Markdown & JSON report formatters
 ```
+

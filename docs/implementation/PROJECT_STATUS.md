@@ -11,8 +11,8 @@
 | Phase | Description | Status | Verification Checkpoint |
 |---|---|---|---|
 | **Phase 0** | Environment and Project Baseline | **PASS** | Tool versions confirmed, Docker hello-world verified, base docs created |
-| **Phase 1** | Foundation and Core Contracts | **IN PROGRESS** | Pending implementation |
-| **Phase 2** | Repository Intelligence | PENDING | - |
+| **Phase 1** | Foundation and Core Contracts | **PASS** | Package installed, 12 unit tests passing, ruff & mypy clean, CLI operational |
+| **Phase 2** | Repository Intelligence | **IN PROGRESS** | Pending implementation |
 | **Phase 3** | Deterministic Analysis & Findings | PENDING | - |
 | **Phase 4** | Adversarial Test Generation | PENDING | - |
 | **Phase 5** | Docker Sandbox & Evidence Collection | PENDING | - |
@@ -35,3 +35,22 @@
   - Configured comprehensive `.gitignore`.
   - Created foundational specifications: `ARCHITECTURE.md`, `DECISIONS.md`, `SECURITY.md`, `ROADMAP.md`, `CHANGELOG.md`, `docs/implementation/ENVIRONMENT_REPORT.md`.
 - **Status:** **PASS**
+
+### Phase 1: Foundation and Core Contracts
+- **Objectives:** Establish Python packaging, configuration management, typed domain models, error taxonomy, structured logging with secret redaction, and CLI foundation.
+- **Implemented Functionality:**
+  - `pyproject.toml` with pinned dependencies and tool configurations.
+  - Core errors (`adversary.core.errors`) with hierarchical domain exceptions.
+  - Logging (`adversary.core.logging`) with automated token/key/secret scrubbers.
+  - Core interfaces (`adversary.core.interfaces`) defining protocols for scanner, analyzers, breaker, runner, verifier, patcher, and persistence.
+  - Domain models & enums (`adversary.models`) covering findings, hypotheses, test artifacts, execution results, decisions, and reports.
+  - Configuration (`adversary.config`) using Pydantic Settings for workspace, persistence, and sandbox limits.
+  - CLI (`adversary.cli`) with Typer and Rich formatting (`version`, `init`, `review`, `findings`, `explain`, `verify`, `fix`, `report`).
+  - Unit tests (`tests/unit/test_config.py`, `test_models.py`, `test_logging.py`, `test_cli.py`).
+- **Verification Results:**
+  - `pytest`: 12 passed.
+  - `ruff check .`: PASS (0 errors).
+  - `mypy src tests`: PASS (16 source files clean).
+  - `adversary version`: Verified CLI binary and output.
+- **Status:** **PASS**
+
