@@ -68,3 +68,24 @@ class RepairStatus(StrEnum):
     VALIDATED = "validated"
     REVERTED = "reverted"
     APPLIED = "applied"
+
+
+class DifferentialOutcome(StrEnum):
+    """Classification of defect persistence across baseline and target revisions."""
+
+    NEW_REGRESSION = "new_regression"
+    PRE_EXISTING_DEFECT = "pre_existing_defect"
+    ENVIRONMENTAL_FAILURE = "environmental_failure"
+    NOT_APPLICABLE = "not_applicable"
+
+
+class TestValidationStatus(StrEnum):
+    """Quality and safety assessment of generated test artifacts."""
+
+    __test__ = False
+
+    VALID = "valid"
+    SYNTAX_ERROR = "syntax_error"
+    DISALLOWED_MODULE = "disallowed_module"
+    VACUOUS_OR_UNASSERTED = "vacuous_or_unasserted"
+    UNLINKED_TARGET = "unlinked_target"

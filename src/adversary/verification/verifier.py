@@ -1,7 +1,7 @@
 """Independent Verification Engine evaluating execution evidence against bug hypotheses."""
 
 from adversary.core.logging import get_logger
-from adversary.models.enums import ExecutionOutcome, VerificationStatus
+from adversary.models.enums import DifferentialOutcome, ExecutionOutcome, VerificationStatus
 from adversary.models.schemas import (
     DefectHypothesis,
     ExecutionResult,
@@ -20,13 +20,21 @@ class IndependentVerifier:
         hypothesis: DefectHypothesis,
         test_artifact: TestArtifact,
         execution_result: ExecutionResult,
+        base_execution_result: ExecutionResult | None = None,
     ) -> VerificationDecision:
         """Independently assess execution evidence and determine finding verification status."""
         dec_id = f"DEC-{hypothesis.finding_id}"
         evidence_ids = [execution_result.id]
+        if base_execution_result:
+            evidence_ids.append(base_execution_result.id)
 
         # 1. Check for infrastructure, timeout, or invalid test errors
         if execution_result.outcome == ExecutionOutcome.TIMED_OUT:
+            diff_out = (
+                DifferentialOutcome.ENVIRONMENTAL_FAILURE
+                if base_execution_result and base_execution_result.outcome == ExecutionOutcome.TIMED_OUT
+                else DifferentialOutcome.NOT_APPLICABLE
+            )
             return VerificationDecision(
                 id=dec_id,
                 finding_id=hypothesis.finding_id,
@@ -35,9 +43,16 @@ class IndependentVerifier:
                 is_attributed_to_target=False,
                 explanation="Execution timed out. Cannot confirm defect behavior within execution budget.",
                 evidence_ids=evidence_ids,
+                differential_outcome=diff_out,
+                base_evidence_id=base_execution_result.id if base_execution_result else None,
             )
 
         if execution_result.outcome in {ExecutionOutcome.ERROR, ExecutionOutcome.INVALID_TEST}:
+            diff_out = (
+                DifferentialOutcome.ENVIRONMENTAL_FAILURE
+                if base_execution_result and base_execution_result.outcome in {ExecutionOutcome.ERROR, ExecutionOutcome.INVALID_TEST}
+                else DifferentialOutcome.NOT_APPLICABLE
+            )
             return VerificationDecision(
                 id=dec_id,
                 finding_id=hypothesis.finding_id,
@@ -46,9 +61,11 @@ class IndependentVerifier:
                 is_attributed_to_target=False,
                 explanation=f"Execution failed due to test harness or environment error: {execution_result.stderr or execution_result.stdout}",
                 evidence_ids=evidence_ids,
+                differential_outcome=diff_out,
+                base_evidence_id=base_execution_result.id if base_execution_result else None,
             )
 
-        # 2. Check if the adversarial test passed (defect was not reproduced)
+        # 2. Check if the adversarial test passed on target (defect was not reproduced)
         if execution_result.outcome == ExecutionOutcome.PASSED:
             return VerificationDecision(
                 id=dec_id,
@@ -58,6 +75,8 @@ class IndependentVerifier:
                 is_attributed_to_target=True,
                 explanation=f"Adversarial test passed without triggering {hypothesis.defect_behavior}. Defect hypothesis contradicted under tested conditions.",
                 evidence_ids=evidence_ids,
+                differential_outcome=DifferentialOutcome.NOT_APPLICABLE,
+                base_evidence_id=base_execution_result.id if base_execution_result else None,
             )
 
         # 3. Execution outcome is FAILED. Check evidence attribution.
@@ -75,6 +94,8 @@ class IndependentVerifier:
                 is_attributed_to_target=False,
                 explanation=f"Test failed, but failure was not attributable to {hypothesis.target_file} ({hypothesis.target_function}). Possible unrelated test harness issue.",
                 evidence_ids=evidence_ids,
+                differential_outcome=DifferentialOutcome.NOT_APPLICABLE,
+                base_evidence_id=base_execution_result.id if base_execution_result else None,
             )
 
         # 4. Check if the observed exception matches expected defect behavior
@@ -82,7 +103,6 @@ class IndependentVerifier:
         observed_exc = execution_result.exception_name
 
         if expected_exc and observed_exc and expected_exc != observed_exc:
-            # Different exception than hypothesized
             return VerificationDecision(
                 id=dec_id,
                 finding_id=hypothesis.finding_id,
@@ -91,9 +111,25 @@ class IndependentVerifier:
                 is_attributed_to_target=True,
                 explanation=f"Failure observed, but raised '{observed_exc}' instead of hypothesized '{expected_exc}'.",
                 evidence_ids=evidence_ids,
+                differential_outcome=DifferentialOutcome.NOT_APPLICABLE,
+                base_evidence_id=base_execution_result.id if base_execution_result else None,
             )
 
-        # 5. Confirmed defect
+        # 5. Differential analysis assessment
+        diff_outcome = DifferentialOutcome.NOT_APPLICABLE
+        diff_annotation = ""
+        if base_execution_result:
+            if base_execution_result.outcome == ExecutionOutcome.PASSED:
+                diff_outcome = DifferentialOutcome.NEW_REGRESSION
+                diff_annotation = " [Differential: NEW_REGRESSION (Passed on base, failed on target)]"
+            elif base_execution_result.outcome == ExecutionOutcome.FAILED:
+                diff_outcome = DifferentialOutcome.PRE_EXISTING_DEFECT
+                diff_annotation = " [Differential: PRE_EXISTING_DEFECT (Failed on both base and target)]"
+            elif base_execution_result.outcome in {ExecutionOutcome.ERROR, ExecutionOutcome.TIMED_OUT}:
+                diff_outcome = DifferentialOutcome.ENVIRONMENTAL_FAILURE
+                diff_annotation = " [Differential: Inconclusive baseline environment failure]"
+
+        # 6. Confirmed defect
         return VerificationDecision(
             id=dec_id,
             finding_id=hypothesis.finding_id,
@@ -102,9 +138,11 @@ class IndependentVerifier:
             is_attributed_to_target=True,
             explanation=(
                 f"Defect successfully reproduced in {hypothesis.target_file} ({hypothesis.target_function}). "
-                f"Observed: {observed_exc or 'Assertion failure'}. Evidence strictly matches defect hypothesis."
+                f"Observed: {observed_exc or 'Assertion failure'}. Evidence strictly matches defect hypothesis.{diff_annotation}"
             ),
             evidence_ids=evidence_ids,
+            differential_outcome=diff_outcome,
+            base_evidence_id=base_execution_result.id if base_execution_result else None,
         )
 
     def _is_attributed(self, hypothesis: DefectHypothesis, traceback_text: str) -> bool:

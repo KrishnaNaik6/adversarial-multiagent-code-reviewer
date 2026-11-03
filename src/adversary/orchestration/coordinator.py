@@ -20,7 +20,9 @@ from adversary.models.schemas import (
 )
 from adversary.orchestration.state import WorkflowContext, WorkflowState
 from adversary.persistence.repository import RunStore
+from adversary.repository.git import get_git_info
 from adversary.repository.scanner import RepositoryScanner
+from adversary.sandbox.differential import DifferentialRunner
 from adversary.sandbox.runner import DockerSandboxRunner
 from adversary.test_generation.breaker import BreakerAgent
 from adversary.verification.verifier import IndependentVerifier
@@ -38,10 +40,11 @@ class ReviewOrchestrator:
         self.hypothesis_gen = HypothesisGenerator()
         self.breaker = BreakerAgent()
         self.sandbox = DockerSandboxRunner(config=self.config.sandbox)
+        self.diff_runner = DifferentialRunner(self.sandbox)
         self.verifier = IndependentVerifier()
         self.store = RunStore(self.config.db_path)
 
-    def run(self, repo_path: Path) -> ReviewReport:
+    def run(self, repo_path: Path, base_ref: str | None = None) -> ReviewReport:
         """Execute full review pipeline from repository ingestion to verified report."""
         timestamp_str = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
         run_id = f"RUN-{timestamp_str}-{uuid.uuid4().hex[:6]}"
@@ -52,6 +55,7 @@ class ReviewOrchestrator:
             canonical_repo = repo_path.resolve()
             logger.info("Stage 1: Scanning repository at %s", canonical_repo)
             manifest = self.scanner.scan(canonical_repo)
+            git_info = get_git_info(canonical_repo)
             ctx.transition_to(WorkflowState.INDEXED, f"Indexed {len(manifest.source_files)} source files")
 
             # Stage 2: Deterministic Static Analysis
@@ -76,17 +80,21 @@ class ReviewOrchestrator:
                     logger.warning("Test generation failed for hypothesis %s: %s", hyp.id, e)
             ctx.transition_to(WorkflowState.TESTS_GENERATED, f"Generated {len(tests)} test artifacts")
 
-            # Stage 5: Sandbox Execution
+            # Stage 5: Sandbox Execution (Differential when base_ref provided)
             logger.info("Stage 5: Executing adversarial tests in sandbox")
             executions: list[ExecutionResult] = []
+            base_executions: dict[str, ExecutionResult] = {}
             for test in tests:
                 try:
-                    res = self.sandbox.execute_test(
-                        repo_path=canonical_repo,
+                    res, base_res = self.diff_runner.run_differential_test(
+                        target_repo=canonical_repo,
+                        base_ref=base_ref,
                         test_artifact=test,
                         timeout_seconds=test.timeout_seconds,
                     )
                     executions.append(res)
+                    if base_res:
+                        base_executions[test.id] = base_res
                 except Exception as e:
                     logger.warning("Sandbox execution failed for test %s: %s", test.id, e)
             ctx.transition_to(WorkflowState.SANDBOX_EXECUTED, f"Executed {len(executions)} tests in sandbox")
@@ -95,8 +103,10 @@ class ReviewOrchestrator:
             logger.info("Stage 6: Evaluating execution evidence")
             decisions: list[VerificationDecision] = []
             exec_by_test_id: dict[str, ExecutionResult] = {e.test_id: e for e in executions}
+            test_by_hyp_id: dict[str, TestArtifact] = {t.hypothesis_id: t for t in tests}
 
             finding_status_map: dict[str, VerificationStatus] = {}
+            finding_decision_map: dict[str, VerificationDecision] = {}
 
             for test in tests:
                 target_hyp = hyp_by_id.get(test.hypothesis_id)
@@ -104,16 +114,28 @@ class ReviewOrchestrator:
                 if target_hyp is None or exec_result is None:
                     continue
 
-                decision = self.verifier.verify(target_hyp, test, exec_result)
+                decision = self.verifier.verify(
+                    hypothesis=target_hyp,
+                    test_artifact=test,
+                    execution_result=exec_result,
+                    base_execution_result=base_executions.get(test.id),
+                )
                 decisions.append(decision)
                 finding_status_map[decision.finding_id] = decision.status
+                finding_decision_map[decision.finding_id] = decision
 
             ctx.transition_to(WorkflowState.VERIFIED, f"Verified {len(decisions)} findings")
 
-            # Update candidate findings with verified statuses
+            # Update candidate findings with full provenance and verified statuses
+            hyp_by_finding_id: dict[str, DefectHypothesis] = {h.finding_id: h for h in hypotheses}
             updated_findings: list[CandidateFinding] = []
             for f in raw_findings:
                 verified_status = finding_status_map.get(f.id, VerificationStatus.UNVERIFIED)
+                matching_hyp = hyp_by_finding_id.get(f.id)
+                matching_test = test_by_hyp_id.get(matching_hyp.id) if matching_hyp else None
+                matching_exec = exec_by_test_id.get(matching_test.id) if matching_test else None
+                matching_decision = finding_decision_map.get(f.id)
+
                 updated_findings.append(
                     CandidateFinding(
                         id=f.id,
@@ -128,6 +150,12 @@ class ReviewOrchestrator:
                         suggested_remediation=f.suggested_remediation,
                         verification_status=verified_status,
                         source_hash=f.source_hash,
+                        base_commit=base_ref or (git_info.get("base_commit") if git_info else None),
+                        target_commit=(git_info.get("commit_hash") if git_info else None) or manifest.git_commit,
+                        hypothesis_id=matching_hyp.id if matching_hyp else None,
+                        test_artifact_id=matching_test.id if matching_test else None,
+                        evidence_id=matching_exec.id if matching_exec else None,
+                        decision_id=matching_decision.id if matching_decision else None,
                     )
                 )
 

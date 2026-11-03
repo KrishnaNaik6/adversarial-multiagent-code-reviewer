@@ -7,10 +7,12 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from adversary.models.enums import (
     Confidence,
+    DifferentialOutcome,
     ExecutionOutcome,
     FindingCategory,
     RepairStatus,
     Severity,
+    TestValidationStatus,
     VerificationStatus,
 )
 
@@ -89,6 +91,24 @@ class CandidateFinding(BaseModel):
     suggested_remediation: str | None = None
     verification_status: VerificationStatus = VerificationStatus.CANDIDATE
     source_hash: str | None = None
+    base_commit: str | None = None
+    target_commit: str | None = None
+    hypothesis_id: str | None = None
+    test_artifact_id: str | None = None
+    evidence_id: str | None = None
+    decision_id: str | None = None
+
+
+class TestValidationResult(BaseModel):
+    """Structured quality and security validation assessment of a test artifact."""
+
+    __test__ = False
+
+    is_valid: bool
+    status: TestValidationStatus
+    reasons: list[str] = Field(default_factory=list)
+    checks_passed: list[str] = Field(default_factory=list)
+    tested_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class DefectHypothesis(BaseModel):
@@ -117,6 +137,7 @@ class TestArtifact(BaseModel):
     strategy: str  # e.g., boundary, empty_input, property_based, exception_path
     timeout_seconds: int = 30
     dependencies: list[str] = Field(default_factory=list)
+    validation_result: TestValidationResult | None = None
 
 
 class ExecutionResult(BaseModel):
@@ -144,6 +165,8 @@ class VerificationDecision(BaseModel):
     is_attributed_to_target: bool
     explanation: str
     evidence_ids: list[str] = Field(default_factory=list)
+    differential_outcome: DifferentialOutcome = DifferentialOutcome.NOT_APPLICABLE
+    base_evidence_id: str | None = None
     decided_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
