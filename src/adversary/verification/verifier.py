@@ -1,4 +1,4 @@
- """Independent Verification Engine evaluating execution evidence against bug hypotheses."""
+"""Independent Verification Engine evaluating execution evidence against bug hypotheses."""
 
 from adversary.core.logging import get_logger
 from adversary.models.enums import DifferentialOutcome, ExecutionOutcome, VerificationStatus
