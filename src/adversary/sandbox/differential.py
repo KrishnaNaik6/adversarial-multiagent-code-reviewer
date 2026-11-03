@@ -122,3 +122,4 @@ class DifferentialRunner:
                 check=False,
             )
         shutil.rmtree(checkout_dir, ignore_errors=True)
+
