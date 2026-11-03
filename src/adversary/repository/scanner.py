@@ -26,6 +26,8 @@ DEFAULT_IGNORE_DIRS = {
     "dist",
     "node_modules",
     ".adversary",
+    "adversary-engine",
+    "adversary-reviewer",
 }
 
 
