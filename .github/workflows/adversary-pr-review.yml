@@ -7,6 +7,7 @@ on:
 permissions:
   contents: read
   pull-requests: write
+  issues: write
 
 jobs:
   adversary-review:
@@ -34,6 +35,14 @@ jobs:
         run: |
           python -m adversary report --format markdown --output pr_report.md
 
+      - name: Upload Review Report Artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: adversary-pr-report
+          path: pr_report.md
+          if-no-files-found: ignore
+
       - name: Post Review Comment to PR
         if: always()
         uses: actions/github-script@v7
@@ -49,7 +58,7 @@ jobs:
                 repo: context.repo.repo,
                 body: body
               });
+              console.log('Successfully posted review comment to PR #' + context.issue.number);
             } else {
               console.log('No pr_report.md found to post.');
             }
-
