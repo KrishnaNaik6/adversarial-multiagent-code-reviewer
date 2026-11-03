@@ -42,6 +42,12 @@ class FindingCategory(StrEnum):
     EXCEPTION_HANDLING = "exception_handling"
     RESOURCE_LEAK = "resource_leak"
     CONCURRENCY = "concurrency"
+    BUSINESS_LOGIC = "business_logic"
+    NUMERIC_UNDERFLOW = "numeric_underflow"
+    STATE_MANAGEMENT = "state_management"
+    TRANSACTION_ATOMICITY = "transaction_atomicity"
+    INPUT_VALIDATION = "input_validation"
+    LIFECYCLE_STATE_MACHINE = "lifecycle_state_machine"
 
 
 class ExecutionOutcome(StrEnum):

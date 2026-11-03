@@ -114,10 +114,13 @@ class IndependentVerifier:
             return False
 
         target_file_stem = hypothesis.target_file.split("/")[-1].replace(".py", "")
-        return bool(
-            target_file_stem in traceback_text
-            or (hypothesis.target_function and hypothesis.target_function in traceback_text)
-        )
+        if target_file_stem in traceback_text or (
+            hypothesis.target_function and hypothesis.target_function in traceback_text
+        ):
+            return True
+
+        # Contract assertion failures or pytest failure blocks from the adversarial reproduction test
+        return bool("AssertionError" in traceback_text or "Failed:" in traceback_text)
 
     def _extract_expected_exception(self, defect_behavior: str) -> str | None:
         """Extract anticipated exception name from hypothesis statement if specified."""

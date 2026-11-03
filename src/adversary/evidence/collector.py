@@ -10,7 +10,7 @@ from adversary.models.schemas import ExecutionResult
 logger = get_logger("adversary.evidence.collector")
 
 EXCEPTION_REGEX = re.compile(
-    r"^(?:E\s+)?([A-Z][a-zA-Z0-9_]*Error|[A-Z][a-zA-Z0-9_]*Exception|AssertionError):\s*(.*)$",
+    r"^(?:E\s+)?([A-Z][a-zA-Z0-9_]*Error|[A-Z][a-zA-Z0-9_]*Exception|AssertionError|Failed):\s*(.*)$",
     re.MULTILINE,
 )
 TRACEBACK_HEADER_REGEX = re.compile(r"Traceback \(most recent call last\):", re.MULTILINE)

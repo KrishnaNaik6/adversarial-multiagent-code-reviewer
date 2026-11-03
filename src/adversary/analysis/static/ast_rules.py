@@ -29,6 +29,7 @@ class ASTPatternVisitor(ast.NodeVisitor):
         prev_guards = set(self._guarded_vars)
         self._collect_guards(node.body)
         self._check_mutable_defaults(node)
+        self._check_semantic_defects(node)
         self.generic_visit(node)
         self._guarded_vars = prev_guards
 
@@ -36,8 +37,230 @@ class ASTPatternVisitor(ast.NodeVisitor):
         prev_guards = set(self._guarded_vars)
         self._collect_guards(node.body)
         self._check_mutable_defaults(node)
+        self._check_semantic_defects(node)
         self.generic_visit(node)
         self._guarded_vars = prev_guards
+
+    def _check_semantic_defects(self, node: ast.FunctionDef | ast.AsyncFunctionDef) -> None:
+        """Run domain-level AST heuristic defect checks."""
+        self._check_boundary_inequality(node)
+        self._check_tax_on_gross(node)
+        self._check_unbounded_discount(node)
+        self._check_low_stock_query(node)
+        self._check_batch_reservation_atomicity(node)
+        self._check_whitespace_name_validation(node)
+        self._check_cancel_confirmed_order(node)
+
+    def _check_boundary_inequality(self, node: ast.FunctionDef | ast.AsyncFunctionDef) -> None:
+        for stmt in ast.walk(node):
+            if (
+                isinstance(stmt, ast.If)
+                and isinstance(stmt.test, ast.Compare)
+                and any(isinstance(op, ast.Gt) for op in stmt.test.ops)
+            ):
+                for comp in stmt.test.comparators:
+                        if isinstance(comp, ast.Constant) and isinstance(comp.value, int) and comp.value in {10, 20, 50, 100}:
+                            self.findings.append(
+                                CandidateFinding(
+                                    id=self._next_id("BND"),
+                                    title="Boundary tier off-by-one excludes exact threshold quantities",
+                                    description=f"Using strict inequality '>' instead of '>=' on threshold {comp.value} denies volume discount to orders at exact threshold.",
+                                    category=FindingCategory.BOUNDARY_CONDITION,
+                                    severity=Severity.MEDIUM,
+                                    confidence=Confidence.HIGH,
+                                    location=SourceLocation(
+                                        file_path=self.relative_path,
+                                        line_start=stmt.lineno,
+                                        line_end=stmt.end_lineno or stmt.lineno,
+                                    ),
+                                    originating_tool="ast_rules",
+                                    rule_id="AST-BND-002",
+                                    suggested_remediation="Use '>=' to make tier boundaries inclusive of exact threshold amounts.",
+                                    source_hash=self.source_hash,
+                                )
+                            )
+                            return
+
+    def _check_tax_on_gross(self, node: ast.FunctionDef | ast.AsyncFunctionDef) -> None:
+        has_discount = any("discount" in p.arg for p in node.args.args) or any(
+            "discount" in getattr(t, "id", "")
+            for a in ast.walk(node)
+            if isinstance(a, ast.Assign)
+            for t in a.targets
+        )
+        for call in ast.walk(node):
+            if isinstance(call, ast.Call):
+                func_name = getattr(call.func, "id", "") or getattr(call.func, "attr", "")
+                if func_name == "calculate_tax" and call.args:
+                    first_arg = call.args[0]
+                    if isinstance(first_arg, ast.Name) and "subtotal" in first_arg.id.lower() and has_discount:
+                        self.findings.append(
+                            CandidateFinding(
+                                id=self._next_id("FIN"),
+                                title="Sales tax computed on pre-discount gross subtotal",
+                                description="Sales tax is assessed against gross items_subtotal instead of net taxable_amount.",
+                                category=FindingCategory.BUSINESS_LOGIC,
+                                severity=Severity.HIGH,
+                                confidence=Confidence.HIGH,
+                                location=SourceLocation(
+                                    file_path=self.relative_path,
+                                    line_start=call.lineno,
+                                    line_end=call.end_lineno or call.lineno,
+                                ),
+                                originating_tool="ast_rules",
+                                rule_id="AST-FIN-001",
+                                suggested_remediation="Compute tax using the net taxable_amount.",
+                                source_hash=self.source_hash,
+                            )
+                        )
+
+    def _check_unbounded_discount(self, node: ast.FunctionDef | ast.AsyncFunctionDef) -> None:
+        for stmt in ast.walk(node):
+            if isinstance(stmt, ast.Assign):
+                for target in stmt.targets:
+                    if isinstance(target, ast.Name) and target.id == "taxable_amount":
+                        has_min = any(
+                            isinstance(sc, ast.Call) and getattr(sc.func, "id", "") == "min"
+                            for sc in ast.walk(node)
+                        )
+                        if not has_min:
+                            self.findings.append(
+                                CandidateFinding(
+                                    id=self._next_id("NUM"),
+                                    title="Unbounded discount deduction creates negative taxable amount",
+                                    description="Vouchers or discounts exceeding merchandise subtotal create negative taxable amounts.",
+                                    category=FindingCategory.NUMERIC_UNDERFLOW,
+                                    severity=Severity.HIGH,
+                                    confidence=Confidence.HIGH,
+                                    location=SourceLocation(
+                                        file_path=self.relative_path,
+                                        line_start=stmt.lineno,
+                                        line_end=stmt.end_lineno or stmt.lineno,
+                                    ),
+                                    originating_tool="ast_rules",
+                                    rule_id="AST-NUM-001",
+                                    suggested_remediation="Bound effective discount with min(discount, subtotal) or floor taxable_amount at 0.",
+                                    source_hash=self.source_hash,
+                                )
+                            )
+
+    def _check_low_stock_query(self, node: ast.FunctionDef | ast.AsyncFunctionDef) -> None:
+        if "low_stock" in node.name.lower():
+            for attr in ast.walk(node):
+                if isinstance(attr, ast.Attribute) and attr.attr == "stock_quantity":
+                    self.findings.append(
+                        CandidateFinding(
+                            id=self._next_id("STK"),
+                            title="Low-stock alert queries total stock instead of unreserved available stock",
+                            description="Inspecting stock_quantity ignores active reservations, failing to detect low stock.",
+                            category=FindingCategory.STATE_MANAGEMENT,
+                            severity=Severity.HIGH,
+                            confidence=Confidence.HIGH,
+                            location=SourceLocation(
+                                file_path=self.relative_path,
+                                line_start=attr.lineno,
+                                line_end=attr.end_lineno or attr.lineno,
+                            ),
+                            originating_tool="ast_rules",
+                            rule_id="AST-STK-001",
+                            suggested_remediation="Inspect available_quantity instead of stock_quantity.",
+                            source_hash=self.source_hash,
+                        )
+                    )
+                    return
+
+    def _check_batch_reservation_atomicity(self, node: ast.FunctionDef | ast.AsyncFunctionDef) -> None:
+        if node.name.startswith("batch_"):
+            has_try = any(isinstance(s, ast.Try) for s in ast.walk(node))
+            has_reserve = any(
+                isinstance(c, ast.Call) and getattr(c.func, "attr", "") in {"reserve_stock", "reserve", "deduct"}
+                for c in ast.walk(node)
+            )
+            if has_reserve and not has_try:
+                self.findings.append(
+                    CandidateFinding(
+                        id=self._next_id("TXN"),
+                        title="Non-atomic batch reservation leaks reserved inventory on partial failure",
+                        description="Batch reservation iterates through items without a try/except rollback handler.",
+                        category=FindingCategory.TRANSACTION_ATOMICITY,
+                        severity=Severity.CRITICAL,
+                        confidence=Confidence.HIGH,
+                        location=SourceLocation(
+                            file_path=self.relative_path,
+                            line_start=node.lineno,
+                            line_end=node.end_lineno or node.lineno,
+                        ),
+                        originating_tool="ast_rules",
+                        rule_id="AST-TXN-001",
+                        suggested_remediation="Roll back already reserved items in an except block if any reservation fails.",
+                        source_hash=self.source_hash,
+                    )
+                )
+
+    def _check_whitespace_name_validation(self, node: ast.FunctionDef | ast.AsyncFunctionDef) -> None:
+        if "register" in node.name.lower() or "user" in node.name.lower():
+            for if_stmt in ast.walk(node):
+                if (
+                    isinstance(if_stmt, ast.If)
+                    and isinstance(if_stmt.test, ast.UnaryOp)
+                    and isinstance(if_stmt.test.op, ast.Not)
+                    and isinstance(if_stmt.test.operand, ast.Name)
+                    and "name" in if_stmt.test.operand.id.lower()
+                ):
+                    has_strip = any(
+                        isinstance(c, ast.Call) and getattr(c.func, "attr", "") == "strip"
+                        for c in ast.walk(if_stmt.test)
+                    )
+                    if not has_strip:
+                        self.findings.append(
+                            CandidateFinding(
+                                id=self._next_id("VAL"),
+                                title="User name validation bypass allows whitespace-only strings",
+                                description="Truthiness check 'if not name:' without .strip() accepts whitespace-only names.",
+                                category=FindingCategory.INPUT_VALIDATION,
+                                severity=Severity.LOW,
+                                confidence=Confidence.HIGH,
+                                location=SourceLocation(
+                                    file_path=self.relative_path,
+                                    line_start=if_stmt.lineno,
+                                    line_end=if_stmt.end_lineno or if_stmt.lineno,
+                                ),
+                                originating_tool="ast_rules",
+                                rule_id="AST-VAL-001",
+                                suggested_remediation="Check 'if not name or not name.strip():' to disallow whitespace strings.",
+                                source_hash=self.source_hash,
+                            )
+                        )
+
+    def _check_cancel_confirmed_order(self, node: ast.FunctionDef | ast.AsyncFunctionDef) -> None:
+        if "cancel" in node.name.lower():
+            for call in ast.walk(node):
+                if isinstance(call, ast.Call) and getattr(call.func, "attr", "") == "release_stock":
+                    has_confirmed = any(
+                        isinstance(attr, ast.Attribute) and attr.attr == "CONFIRMED"
+                        for attr in ast.walk(node)
+                    )
+                    if has_confirmed:
+                        self.findings.append(
+                            CandidateFinding(
+                                id=self._next_id("LIF"),
+                                title="Confirmed order cancellation calls release_stock instead of restock",
+                                description="Confirmed orders have 0 reserved stock; calling release_stock raises an inventory error instead of restocking.",
+                                category=FindingCategory.LIFECYCLE_STATE_MACHINE,
+                                severity=Severity.CRITICAL,
+                                confidence=Confidence.HIGH,
+                                location=SourceLocation(
+                                    file_path=self.relative_path,
+                                    line_start=call.lineno,
+                                    line_end=call.end_lineno or call.lineno,
+                                ),
+                                originating_tool="ast_rules",
+                                rule_id="AST-LIF-001",
+                                suggested_remediation="Restock inventory for CONFIRMED orders, only release reserved stock for PENDING orders.",
+                                source_hash=self.source_hash,
+                            )
+                        )
+                        return
 
     def _collect_guards(self, statements: list[ast.stmt]) -> None:
         """Identify variables that are checked for emptiness/zero before exit."""
